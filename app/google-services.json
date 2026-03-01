@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "709322502085",
+    "project_id": "wtcapp-56d0d",
+    "storage_bucket": "wtcapp-56d0d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:709322502085:android:871b7b438f6c95f592a5ac",
+        "android_client_info": {
+          "package_name": "com.example.wtcapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAidMFg7u53gbsPaNAjr83dAJJa292wndc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

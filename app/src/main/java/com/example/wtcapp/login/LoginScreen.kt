@@ -1,0 +1,192 @@
+package com.example.wtcapp.login
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+@Composable
+fun LoginScreen(
+    onNavigateToCadastro: () -> Unit,
+    onLoginSuccess: () -> Unit
+) {
+    var email by remember { mutableStateOf("") }
+    var senha by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
+
+    val azulFundo = Color(0xFF384B5B)
+    val laranjaBotao = Color(0xFFF18A21)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(azulFundo, azulFundo.copy(alpha = 0.95f))
+                )
+            )
+            .padding(horizontal = 32.dp, vertical = 48.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Título
+            Text(
+                text = "LOGIN",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Olá! Que bom ter você por aqui.\nVamos juntos criar estratégias que transformam!",
+                color = Color(0xFFDDE5EC),
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Campo de E-mail
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("E-MAIL", color = Color.White) },
+                singleLine = true,
+                leadingIcon = {
+                    Icon(Icons.Default.Email, contentDescription = null, tint = Color.White)
+                },
+                shape = RoundedCornerShape(10.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedBorderColor = Color.White,
+                    unfocusedBorderColor = Color(0xFFB0BEC5),
+                    cursorColor = Color.White
+                ),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Campo de Senha
+            OutlinedTextField(
+                value = senha,
+                onValueChange = { senha = it },
+                label = { Text("SENHA", color = Color.White) },
+                singleLine = true,
+                leadingIcon = {
+                    Icon(Icons.Default.Lock, contentDescription = null, tint = Color.White)
+                },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                shape = RoundedCornerShape(10.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedBorderColor = Color.White,
+                    unfocusedBorderColor = Color(0xFFB0BEC5),
+                    cursorColor = Color.White
+                ),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Mensagem de erro
+            if (errorMessage.isNotEmpty()) {
+                Text(
+                    text = errorMessage,
+                    color = Color.Red,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+
+            // Botão principal
+            Button(
+                onClick = {
+                    if (email.isNotBlank() && senha.isNotBlank()) {
+                        onLoginSuccess() // ✅ Navega para tela de comunicados
+                    } else {
+                        errorMessage = "Por favor, preencha e-mail e senha."
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = laranjaBotao),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+            ) {
+                Text("Continuar", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Textos clicáveis
+            Text(
+                text = "Esqueci minha senha",
+                color = Color.White,
+                fontSize = 14.sp,
+                modifier = Modifier.clickable { /* ação */ }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Fazer cadastro",
+                color = Color.White,
+                fontSize = 14.sp,
+                modifier = Modifier.clickable { onNavigateToCadastro() }
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Divisor “OU”
+            Text(
+                text = "OU",
+                color = Color(0xFFDDE5EC),
+                fontSize = 14.sp
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Botão Google
+            OutlinedButton(
+                onClick = { /* login com Google */ },
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                border = ButtonDefaults.outlinedButtonBorder.copy(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(listOf(Color.White, Color.White))
+                ),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+            ) {
+                Text("Continuar com o Google", fontSize = 14.sp)
+            }
+        }
+    }
+}

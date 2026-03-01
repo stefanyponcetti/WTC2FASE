@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">WTCAPP</string>
+    <string name="title_activity_contatos">contatos</string>
+    <string name="title_activity_contatos_screen">ContatosScreen</string>
+</resources>
