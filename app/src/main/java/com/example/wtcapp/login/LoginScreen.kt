@@ -1,5 +1,9 @@
 package com.example.wtcapp.login
 
+import android.app.Activity
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,12 +18,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.wtcapp.auth.GoogleAuthManager
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.common.api.ApiException
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -123,15 +132,33 @@ fun LoginScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
-
+            val scope = rememberCoroutineScope()
             // Botão principal
             Button(
                 onClick = {
                     if (email.isNotBlank() && senha.isNotBlank()) {
-                        onLoginSuccess() // ✅ Navega para tela de comunicados
+                        errorMessage = ""
+
+                        scope.launch {
+                            try {
+                                val response = RetrofitClient.api.login(LoginRequest(email, senha))
+
+                                if (response.isSuccessful && response.message() == "OK") {
+                                    onLoginSuccess()
+                                } else {
+                                    errorMessage = response.body()?.message ?: "Credenciais inválidas."
+                                }
+
+                            } catch (e: Exception) {
+                                errorMessage = "Erro ao conectar ao servidor."
+                            }
+                        }
+
                     } else {
                         errorMessage = "Por favor, preencha e-mail e senha."
                     }
+
+
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = laranjaBotao),
                 shape = RoundedCornerShape(10.dp),
@@ -145,11 +172,27 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             // Textos clicáveis
+            val context1 = LocalContext.current
+
             Text(
                 text = "Esqueci minha senha",
                 color = Color.White,
                 fontSize = 14.sp,
-                modifier = Modifier.clickable { /* ação */ }
+                modifier = Modifier.clickable {
+                    if (email.isBlank()) {
+                        Toast.makeText(
+                            context1,
+                            "Preencha o e-mail para recuperar a senha",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        Toast.makeText(
+                            context1,
+                            "Foi encaminhado um e-mail para redefinição de senha",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -171,10 +214,54 @@ fun LoginScreen(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+            val context = LocalContext.current
+            val googleAuthManager = remember { GoogleAuthManager(context) }
+            val googleSignInClient = googleAuthManager.getClient()
+            val launcher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.StartActivityForResult()
+            ) { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+                    val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
 
+                    try {
+                        val account = task.getResult(ApiException::class.java)
+                        val idToken = account.idToken
+
+                        if (idToken == null) {
+                            errorMessage = "Token do Google inválido"
+                            return@rememberLauncherForActivityResult
+                        }
+
+                        scope.launch {
+                            try {
+                                val response = RetrofitClient.api.loginGoogle(
+                                    LoginGoogleRequest(idToken)
+                                )
+
+                                if (response.isSuccessful && response.message() == "OK") {
+                                    onLoginSuccess()
+                                } else {
+                                    errorMessage = response.body()?.message ?: "Erro no login Google"
+                                }
+
+                            } catch (e: Exception) {
+                                errorMessage = "Erro ao conectar com servidor"
+                            }
+                        }
+
+                    } catch (e: ApiException) {
+                        errorMessage = "Erro Google: ${e.statusCode}"
+                    }
+                } else {
+                    errorMessage = "Login cancelado ou falhou"
+                }
+            }
             // Botão Google
             OutlinedButton(
-                onClick = { /* login com Google */ },
+                onClick = {
+                    val signInIntent = googleSignInClient.signInIntent
+                    launcher.launch(signInIntent)
+                },
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                 border = ButtonDefaults.outlinedButtonBorder.copy(
                     width = 1.dp,
@@ -189,4 +276,6 @@ fun LoginScreen(
             }
         }
     }
+
 }
+
