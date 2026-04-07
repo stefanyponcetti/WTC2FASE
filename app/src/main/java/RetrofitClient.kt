@@ -16,14 +16,14 @@ object RetrofitClient {
                 || "google_sdk" == Build.PRODUCT)
     }
 
-    private val BASE_URL = if (isEmulator()) {
-        "http://10.0.2.2:5255/"
-    } else {
-        //"http://192.168.15.100:5255/"
-        "http://localhost:5255/"
-    }
+//    private val BASE_URL = if (isEmulator()) {
+//        "http://10.0.2.2:5255/"
+//    } else {
+//        //"http://192.168.15.9:5255/"
+//        "http://localhost:5255/"
+//    }
 
-
+    private val BASE_URL = "http://10.0.2.2:5255/"
 
     val api: UserApi by lazy {
         Retrofit.Builder()

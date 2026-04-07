@@ -10,5 +10,8 @@ interface UserApi {
 
     @POST("api/GoogleLogin/login")
     suspend fun loginGoogle(@Body request: LoginGoogleRequest): Response<LoginResponse>
+
+    @POST("api/User/register")
+    suspend fun register(@Body request: RegisterRequest): Response<RegisterResponse>
 }
 

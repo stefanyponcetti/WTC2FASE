@@ -241,11 +241,12 @@ fun LoginScreen(
                                 if (response.isSuccessful && response.message() == "OK") {
                                     onLoginSuccess()
                                 } else {
-                                    errorMessage = response.body()?.message ?: "Erro no login Google"
+                                    errorMessage = response.body()?.message
+                                        ?: ("Erro no login Google" + idToken)
                                 }
 
                             } catch (e: Exception) {
-                                errorMessage = "Erro ao conectar com servidor"
+                                errorMessage = "Erro ao conectar com servidor" +e.message
                             }
                         }
 

@@ -9,8 +9,8 @@ class GoogleAuthManager(private val context: Context) {
 
     fun getClient(): GoogleSignInClient {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken("709322502085-0rotrcvap2gdmdvqp5i0r3tg30v82kij.apps.googleusercontent.com")
             .requestEmail()
-            .requestIdToken("910531162396-es1qcnjl3cq45g5kkd3eqcdr2e9av35o.apps.googleusercontent.com")
             .build()
 
         return GoogleSignIn.getClient(context, gso)
