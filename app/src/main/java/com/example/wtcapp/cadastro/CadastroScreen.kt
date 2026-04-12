@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.wtcapp.login.RegisterRequest
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -266,16 +267,19 @@ fun CadastroScreen(onNavigateToLogin: () -> Unit, onCadastroSuccess: () -> Unit)
                                         }
                                         .addOnFailureListener { e ->
                                             Toast.makeText(context, "Erro ao salvar dados: ${e.message}", Toast.LENGTH_LONG).show()
+                                            FirebaseCrashlytics.getInstance().recordException(RuntimeException(e))
                                         }
                                     onCadastroSuccess()
                                     Toast.makeText(context, "Cadastro concluído!", Toast.LENGTH_SHORT).show()
                                 }
                                 .addOnFailureListener { e ->
                                     Toast.makeText(context, "Erro no Firebase: ${e.message}", Toast.LENGTH_LONG).show()
+                                    FirebaseCrashlytics.getInstance().recordException(RuntimeException(e))
                                 }
 
                         } catch (e: Exception) {
                             Toast.makeText(context, "Erro ao conectar ao servidor.", Toast.LENGTH_LONG).show()
+                            FirebaseCrashlytics.getInstance().recordException(RuntimeException(e))
                         }
                     }
                 },

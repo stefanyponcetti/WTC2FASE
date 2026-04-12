@@ -19,10 +19,13 @@ import com.example.wtcapp.criarcomunicado.CriarComunicadoScreen
 import com.example.wtcapp.mensagem.MensagemScreen
 import com.example.wtcapp.perfil.PerfilScreen
 import com.example.wtcapp.ui.theme.WTCAPPTheme
+import com.google.firebase.FirebaseApp
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     override fun onCreate(savedInstanceState: Bundle?) {
+        FirebaseApp.initializeApp(this)
         super.onCreate(savedInstanceState)
         setContent {
             WTCAPPTheme {
@@ -98,8 +101,11 @@ class MainActivity : ComponentActivity() {
                             onLogout = { screenStack.add("comunicados") }
                         )
                     }
+                    FirebaseCrashlytics.getInstance().log("Tela "+ currentScreen+  " carregada")
                 }
+
             }
+
         }
     }
 }

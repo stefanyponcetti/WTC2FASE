@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.example.wtcapp.auth.GoogleAuthManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import kotlinx.coroutines.launch
 
 @Composable
@@ -125,6 +126,7 @@ fun LoginScreen(
 
             // Mensagem de erro
             if (errorMessage.isNotEmpty()) {
+                FirebaseCrashlytics.getInstance().log(errorMessage)
                 Text(
                     text = errorMessage,
                     color = Color.Red,
@@ -147,15 +149,19 @@ fun LoginScreen(
                                     onLoginSuccess()
                                 } else {
                                     errorMessage = response.body()?.message ?: "Credenciais inválidas."
+                                    FirebaseCrashlytics.getInstance().recordException(RuntimeException(errorMessage))
                                 }
 
                             } catch (e: Exception) {
-                                errorMessage = "Erro ao conectar ao servidor."
+                                    errorMessage = "Erro ao conectar ao servidor."
+                                    FirebaseCrashlytics.getInstance().recordException(RuntimeException(e))
+
                             }
                         }
 
                     } else {
                         errorMessage = "Por favor, preencha e-mail e senha."
+                        FirebaseCrashlytics.getInstance().recordException(RuntimeException(errorMessage))
                     }
 
 
@@ -243,18 +249,22 @@ fun LoginScreen(
                                 } else {
                                     errorMessage = response.body()?.message
                                         ?: ("Erro no login Google" + idToken)
+                                    FirebaseCrashlytics.getInstance().recordException(RuntimeException(errorMessage))
                                 }
 
                             } catch (e: Exception) {
                                 errorMessage = "Erro ao conectar com servidor" +e.message
+                                FirebaseCrashlytics.getInstance().recordException(RuntimeException(errorMessage))
                             }
                         }
 
                     } catch (e: ApiException) {
                         errorMessage = "Erro Google: ${e.statusCode}"
+                        FirebaseCrashlytics.getInstance().recordException(RuntimeException(errorMessage))
                     }
                 } else {
                     errorMessage = "Login cancelado ou falhou"
+                    FirebaseCrashlytics.getInstance().recordException(RuntimeException(errorMessage))
                 }
             }
             // Botão Google
