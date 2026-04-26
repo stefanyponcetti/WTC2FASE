@@ -20,6 +20,10 @@ data class RegisterRequest(
     val data_Nasc: String
 )
 
+data class ForgotPasswordRequest(
+    val email: String
+)
+
 data class RegisterResponse(
     val tipoCliente : String,
     val name : String,
@@ -31,4 +35,9 @@ data class LoginResponse(
     val success: Boolean,
     val message: String,
     val token: String? = null
+)
+
+data class ForgotPasswordResponse(
+    val success: Boolean,
+    val message: String,
 )

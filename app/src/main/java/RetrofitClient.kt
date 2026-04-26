@@ -1,5 +1,6 @@
 import android.os.Build
 import com.example.wtcapp.login.UserApi
+import com.example.wtcapp.redefinicaoSenha.RedefinirSenhaApi
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -31,5 +32,13 @@ object RetrofitClient {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(UserApi::class.java)
+    }
+
+    val api2: RedefinirSenhaApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(RedefinirSenhaApi::class.java)
     }
 }

@@ -18,6 +18,7 @@ import com.example.wtcapp.contatos.ContatosScreen
 import com.example.wtcapp.criarcomunicado.CriarComunicadoScreen
 import com.example.wtcapp.mensagem.MensagemScreen
 import com.example.wtcapp.perfil.PerfilScreen
+import com.example.wtcapp.redefinicaoSenha.RedefinirSenhaScreen
 import com.example.wtcapp.ui.theme.WTCAPPTheme
 import com.google.firebase.FirebaseApp
 import com.google.firebase.crashlytics.FirebaseCrashlytics
@@ -47,7 +48,12 @@ class MainActivity : ComponentActivity() {
                     when (currentScreen) {
                         "login" -> LoginScreen(
                             onNavigateToCadastro = { screenStack.add("cadastro") },
-                            onLoginSuccess = { screenStack.add("chats") }
+                            onLoginSuccess = { screenStack.add("chats") },
+                            onNavigateToRedefinirSenha = { screenStack.add("redefinirSenha") }
+                        )
+
+                        "redefinirSenha" -> RedefinirSenhaScreen(
+                            onBackToLogin = { screenStack.add("login") }
                         )
 
                         "cadastro" -> CadastroScreen(

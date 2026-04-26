@@ -34,7 +34,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun LoginScreen(
     onNavigateToCadastro: () -> Unit,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit,
+    onNavigateToRedefinirSenha: () -> Unit,
 ) {
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
@@ -180,27 +181,48 @@ fun LoginScreen(
             // Textos clicáveis
             val context1 = LocalContext.current
 
+// Localize o bloco da label "Esqueci minha senha" no seu arquivo LoginScreen.kt e substitua:
+
             Text(
                 text = "Esqueci minha senha",
                 color = Color.White,
                 fontSize = 14.sp,
                 modifier = Modifier.clickable {
                     if (email.isBlank()) {
-                        Toast.makeText(
-                            context1,
-                            "Preencha o e-mail para recuperar a senha",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(context1, "Preencha o e-mail para recuperar a senha", Toast.LENGTH_SHORT).show()
                     } else {
-                        Toast.makeText(
-                            context1,
-                            "Foi encaminhado um e-mail para redefinição de senha",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        // CHAMADA AO BACKEND
+                        scope.launch {
+                            try {
+                                val response = RetrofitClient.api2.forgotPassword(ForgotPasswordRequest(email))
+                                if (response.isSuccess) {
+                                    Toast.makeText(
+                                        context1,
+                                        "Se o e-mail existir, um token foi enviado.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                } else {
+                                    Toast.makeText(context1, "Erro ao solicitar recuperação.", Toast.LENGTH_SHORT).show()
+                                }
+                            } catch (e: Exception) {
+                                Toast.makeText(context1, "Erro de conexão.", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     }
                 }
             )
 
+            TextButton(
+                onClick = { onNavigateToRedefinirSenha() },
+                modifier = Modifier.padding(top = 0.dp)
+            ) {
+                Text(
+                    text = "Já recebi o token para redefinição",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Normal
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
@@ -212,7 +234,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Divisor “OU”
             Text(
                 text = "OU",
                 color = Color(0xFFDDE5EC),
@@ -267,7 +288,7 @@ fun LoginScreen(
                     FirebaseCrashlytics.getInstance().recordException(RuntimeException(errorMessage))
                 }
             }
-            // Botão Google
+
             OutlinedButton(
                 onClick = {
                     val signInIntent = googleSignInClient.signInIntent
