@@ -3,106 +3,228 @@ package com.example.wtcapp.perfil
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.wtcapp.topbar.TopBar
+import kotlinx.coroutines.launch
 
 @Composable
 fun PerfilScreen(
-    nome: String = "Eliane Meliz Cruz",
-    email: String = "eli.meliz@wtc.com.br",
-    telefone: String = "(11) 98342-13421",
-    dataNascimento: String = "02/03/1981",
-    cargo: String = "Analista de Recursos Humanos",
-    tempoEmpresa: String = "3 anos e 2 meses",
-    unidade: String = "Av. Paulista - P. Central",
-    tipoUsuario: String = "Colaborador",
-    onLogout: () -> Unit = {}
+    nome: String,
+    email: String,
+    telefone: String,
+    dataNascimento: String,
+    cargo: String,
+    tempoEmpresa: String,
+    unidade: String,
+    tipoUsuario: String,
+    onLogout: () -> Unit,
+    onNavigateToChats: () -> Unit,
+    onNavigateToPerfil: () -> Unit,
+    onNavigateToComunicados: () -> Unit,
+    onNavigateToContatos: () -> Unit
 ) {
+
+    val scope = rememberCoroutineScope()
+
+    var isEditing by remember { mutableStateOf(false) }
+
+    var nomeState by remember { mutableStateOf(nome) }
+    var emailState by remember { mutableStateOf(email) }
+    var telefoneState by remember { mutableStateOf(telefone) }
+    var dataState by remember { mutableStateOf(dataNascimento) }
+    var unidadeState by remember { mutableStateOf(unidade) }
+
+    var loading by remember { mutableStateOf(false) }
+    var mensagem by remember { mutableStateOf("") }
+
     val azulFundo = Color(0xFF384B5B)
     val laranja = Color(0xFFF18A21)
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(azulFundo)
-            .padding(horizontal = 24.dp, vertical = 32.dp)
-    ) {
+    Scaffold(
+        topBar = {
+            TopBar(
+                onNavigate = { screen ->
+                    when (screen) {
+                        "chats" -> onNavigateToChats()
+                        "perfil" -> onNavigateToPerfil()
+                        "comunicados" -> onNavigateToComunicados()
+                        "contatos" -> onNavigateToContatos()
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxSize()
+                .background(azulFundo)
+                .padding(innerPadding)
+                .padding(20.dp)
         ) {
+
             Text(
                 text = "PERFIL",
                 fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
                 color = Color.White
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Tipo de usuário
-            Text(
-                text = "Tipo: $tipoUsuario",
-                color = laranja,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
+            ProfileField(
+                label = "Nome",
+                value = nomeState,
+                icon = Icons.Default.Person,
+                editable = isEditing,
+                onValueChange = { nomeState = it }
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            ProfileField(
+                label = "Email",
+                value = emailState,
+                icon = Icons.Default.Email,
+                editable = isEditing,
+                onValueChange = { emailState = it }
+            )
 
-            // Exibição de informações do usuário
-            ProfileField(label = "Nome", value = nome)
-            ProfileField(label = "E-mail", value = email)
-            ProfileField(label = "Telefone", value = telefone)
-            ProfileField(label = "Data de Nascimento", value = dataNascimento)
-            ProfileField(label = "Cargo", value = cargo)
-            ProfileField(label = "Tempo na Empresa", value = tempoEmpresa)
-            ProfileField(label = "Unidade", value = unidade)
+            ProfileField(
+                label = "Telefone",
+                value = telefoneState,
+                icon = Icons.Default.Phone,
+                editable = isEditing,
+                onValueChange = { telefoneState = it }
+            )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            ProfileField(
+                label = "Nascimento",
+                value = dataState,
+                icon = Icons.Default.DateRange,
+                editable = isEditing,
+                onValueChange = { dataState = it }
+            )
 
-            // Botão de sair
-            Button(
-                onClick = onLogout,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = laranja),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text("Sair", color = Color.White, fontSize = 16.sp)
+            ProfileField(
+                label = "Cargo",
+                value = cargo,
+                icon = Icons.Default.Work,
+                editable = false,
+                readOnly = true
+            )
+
+            ProfileField(
+                label = "Unidade",
+                value = unidadeState,
+                icon = Icons.Default.Place,
+                editable = isEditing,
+                onValueChange = { unidadeState = it }
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // BOTÕES
+            if (!isEditing) {
+
+                Button(
+                    onClick = { isEditing = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = laranja)
+                ) {
+                    Text("Editar Perfil")
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Button(
+                    onClick = onLogout,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text("Sair")
+                }
+
+            } else {
+
+                Row {
+                    Button(
+                        onClick = {
+                            loading = true
+                            scope.launch {
+                                kotlinx.coroutines.delay(1000)
+                                loading = false
+                                mensagem = "Atualizado com sucesso!"
+                                isEditing = false
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = laranja)
+                    ) {
+                        Text("Salvar")
+                    }
+
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    Button(onClick = { isEditing = false }) {
+                        Text("Cancelar")
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (loading) {
+                CircularProgressIndicator(color = laranja)
+            }
+
+            if (mensagem.isNotEmpty()) {
+                Text(mensagem, color = Color.Green)
             }
         }
     }
 }
 
 @Composable
-fun ProfileField(label: String, value: String) {
+fun ProfileField(
+    label: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    editable: Boolean,
+    onValueChange: (String) -> Unit = {},
+    readOnly: Boolean = false
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
             .background(Color(0xFF4A5A68), RoundedCornerShape(8.dp))
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .padding(12.dp)
     ) {
-        Text(
-            text = label,
-            color = Color(0xFFF18A21),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = value,
-            color = Color.White,
-            fontSize = 16.sp
-        )
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = Color(0xFFF18A21))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(label, color = Color.White)
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        if (editable && !readOnly) {
+            androidx.compose.foundation.text.BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                textStyle = TextStyle(color = Color.White, fontSize = 16.sp)
+            )
+        } else {
+            Text(
+                text = value,
+                color = if (readOnly) Color.Gray else Color.White,
+                fontSize = 16.sp
+            )
+        }
     }
 }
-
-

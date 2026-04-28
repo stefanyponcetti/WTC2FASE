@@ -3,87 +3,85 @@ package com.example.wtcapp
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import com.example.wtcapp.login.LoginScreen
 import com.example.wtcapp.cadastro.CadastroScreen
 import com.example.wtcapp.chats.ChatListScreen
 import com.example.wtcapp.comunicados.ComunicadosScreen
 import com.example.wtcapp.contatos.ContatosScreen
 import com.example.wtcapp.criarcomunicado.CriarComunicadoScreen
+import com.example.wtcapp.login.LoginScreen
 import com.example.wtcapp.mensagem.MensagemScreen
 import com.example.wtcapp.perfil.PerfilScreen
 import com.example.wtcapp.ui.theme.WTCAPPTheme
 
 class MainActivity : ComponentActivity() {
+
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             WTCAPPTheme {
+
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    // Pilha de telas
-                    val screenStack = remember { mutableStateListOf("login") }
 
-                    // Tela atual é sempre o último da pilha
-                    val currentScreen = screenStack.last()
+                    var currentScreen by remember { mutableStateOf("login") }
 
-                    // Intercepta o botão físico de back
-                    BackHandler(enabled = screenStack.size > 1) {
-                        screenStack.removeLast() // volta para a tela anterior
+                    fun navigate(screen: String) {
+                        currentScreen = screen
                     }
 
                     when (currentScreen) {
+
                         "login" -> LoginScreen(
-                            onNavigateToCadastro = { screenStack.add("cadastro") },
-                            onLoginSuccess = { screenStack.add("chats") }
+                            onNavigateToCadastro = { navigate("cadastro") },
+                            onLoginSuccess = { navigate("chats") }
                         )
 
                         "cadastro" -> CadastroScreen(
-                            onNavigateToLogin = { screenStack.add("login") },
-                            onCadastroSuccess = { screenStack.add("login") }
+                            onNavigateToLogin = { navigate("login") },
+                            onCadastroSuccess = { navigate("login") }
                         )
 
                         "chats" -> ChatListScreen(
-                            onNavigateToChats = { screenStack.add("chats") },
-                            onNavigateToPerfil = { screenStack.add("perfil") },
-                            onNavigateToComunicados = { screenStack.add("comunicados") },
-                            onNavigateToContatos = { screenStack.add("contatos") },
-                            onNavigateToNovaMensagem = { screenStack.add("mensagem") }
+                            onNavigateToChats = { navigate("chats") },
+                            onNavigateToPerfil = { navigate("perfil") },
+                            onNavigateToComunicados = { navigate("comunicados") },
+                            onNavigateToContatos = { navigate("contatos") },
+                            onNavigateToNovaMensagem = { navigate("mensagem") }
                         )
 
                         "comunicados" -> ComunicadosScreen(
-                            onNavigateToCriar = { screenStack.add("criarComunicado") },
-                            onNavigateToChats = { screenStack.add("chats") },
-                            onNavigateToPerfil = { screenStack.add("perfil") },
-                            onNavigateToComunicados = { screenStack.add("comunicados") },
-                            onNavigateToContatos = { screenStack.add("contatos") }
+                            onNavigateToCriar = { navigate("criarComunicado") },
+                            onNavigateToChats = { navigate("chats") },
+                            onNavigateToPerfil = { navigate("perfil") },
+                            onNavigateToComunicados = { navigate("comunicados") },
+                            onNavigateToContatos = { navigate("contatos") }
                         )
 
                         "mensagem" -> MensagemScreen(
-                            onNavigateToChats = { screenStack.add("chats") },
-                            onNavigateToPerfil = { screenStack.add("perfil") },
-                            onNavigateToComunicados = { screenStack.add("comunicados") },
-                            onNavigateToContatos = { screenStack.add("contatos") }
+                            onNavigateToChats = { navigate("chats") },
+                            onNavigateToPerfil = { navigate("perfil") },
+                            onNavigateToComunicados = { navigate("comunicados") },
+                            onNavigateToContatos = { navigate("contatos") }
                         )
 
                         "criarComunicado" -> CriarComunicadoScreen(
-                            onBack = { screenStack.removeLast() }
+                            onBack = { navigate("comunicados") }
                         )
 
                         "contatos" -> ContatosScreen(
-                            onNavigateToChats = { screenStack.add("chats") },
-                            onNavigateToPerfil = { screenStack.add("perfil") },
-                            onNavigateToComunicados = { screenStack.add("comunicados") },
-                            onNavigateToContatos = { screenStack.add("contatos") }
+                            onNavigateToChats = { navigate("chats") },
+                            onNavigateToPerfil = { navigate("perfil") },
+                            onNavigateToComunicados = { navigate("comunicados") },
+                            onNavigateToContatos = { navigate("contatos") }
                         )
 
                         "perfil" -> PerfilScreen(
@@ -95,7 +93,13 @@ class MainActivity : ComponentActivity() {
                             tempoEmpresa = "3 anos e 2 meses",
                             unidade = "Av. Paulista • P Central",
                             tipoUsuario = "Colaborador",
-                            onLogout = { screenStack.add("comunicados") }
+                            onLogout = { navigate("login") },
+
+                            // 🔥 IMPORTANTE: adiciona navegação pra TopBar funcionar
+                            onNavigateToChats = { navigate("chats") },
+                            onNavigateToPerfil = { navigate("perfil") },
+                            onNavigateToComunicados = { navigate("comunicados") },
+                            onNavigateToContatos = { navigate("contatos") }
                         )
                     }
                 }

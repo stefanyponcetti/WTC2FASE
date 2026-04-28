@@ -1,15 +1,11 @@
 package com.example.wtcapp.mensagem
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -22,11 +18,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import com.example.wtcapp.contatos.ContatosScreen
-import com.example.wtcapp.topbar.TopBar
 import com.example.wtcapp.R
-
+import com.example.wtcapp.topbar.TopBar
 
 val cinzaCard = Color(0xFF4A5A68)
 
@@ -41,14 +34,11 @@ fun MessageList() {
         MessageBubble("Bom dia, prezada Fernanda.")
 
         MessageBubble(
-            "Estamos convidando lideranças do setor de compras para o evento “AI in procurement”. " +
-                    "Será uma tarde com palestras e dinâmicas com o objetivo de demonstrar como a IA pode ajudar " +
-                    "na otimização da rotina diária de compras e gerar novas oportunidades. Pedimos que confirme " +
-                    "vossa presença através do link abaixo de credenciamento."
+            "Estamos convidando lideranças do setor de compras para o evento AI in procurement. " +
+                    "Será uma tarde com palestras e dinâmicas sobre IA aplicada às compras."
         )
 
         MessageImageBubble(
-            imageUrl = "https://www.linkpicture.com/q/ia-compras.jpg", // substitua por URL real se quiser
             link = "https://wtceventscenter.com.br/eventsnovprocurement123"
         )
     }
@@ -67,7 +57,7 @@ fun MessageBubble(text: String) {
 }
 
 @Composable
-fun MessageImageBubble(imageUrl: String, link: String) {
+fun MessageImageBubble(link: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth(0.85f)
@@ -76,17 +66,21 @@ fun MessageImageBubble(imageUrl: String, link: String) {
     ) {
         Image(
             painter = painterResource(id = R.drawable.img),
-            contentDescription = "Imagem no Box",
-            contentScale = ContentScale.Crop, // mantém proporção e corta excesso
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
             modifier = Modifier
-                .fillMaxWidth()   // ocupa toda a largura disponível
-                .height(150.dp)   // altura fixa para não distorcer
+                .fillMaxWidth()
+                .height(150.dp)
                 .clip(RoundedCornerShape(8.dp))
         )
 
         Spacer(Modifier.height(6.dp))
 
-        Text(link, color = Color(0xFF0645AD), fontSize = 14.sp)
+        Text(
+            text = link,
+            color = Color(0xFF0645AD),
+            fontSize = 14.sp
+        )
     }
 }
 
@@ -107,9 +101,15 @@ fun BottomBar(modifier: Modifier = Modifier) {
                 .weight(1f)
                 .padding(start = 8.dp)
         )
-        Icon(Icons.Default.PhotoCamera, contentDescription = "Câmera", tint = Color.White)
+
+        Icon(
+            imageVector = Icons.Default.PhotoCamera,
+            contentDescription = "Câmera",
+            tint = Color.White
+        )
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MensagemScreen(
@@ -118,25 +118,31 @@ fun MensagemScreen(
     onNavigateToComunicados: () -> Unit,
     onNavigateToContatos: () -> Unit
 ) {
+
     Scaffold(
         topBar = {
             TopBar(
-                onNavigateToChats,
-                onNavigateToPerfil,
-                onNavigateToComunicados,
-                onNavigateToContatos
+                onNavigate = { screen ->
+                    when (screen) {
+                        "chats" -> onNavigateToChats()
+                        "perfil" -> onNavigateToPerfil()
+                        "comunicados" -> onNavigateToComunicados()
+                        "contatos" -> onNavigateToContatos()
+                    }
+                }
             )
         },
         bottomBar = {
             BottomBar()
         }
     ) { innerPadding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding) // garante que o conteúdo não fique por baixo da TopBar/BottomBar
+                .padding(innerPadding)
         ) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             MessageList()
         }
     }
@@ -144,11 +150,8 @@ fun MensagemScreen(
 
 @Preview(showBackground = true)
 @Composable
-fun DirectoryScreenPreview() {
+fun MensagemPreview() {
     MaterialTheme {
-        MensagemScreen({},{},{},{})
+        MensagemScreen({}, {}, {}, {})
     }
 }
-
-
-
