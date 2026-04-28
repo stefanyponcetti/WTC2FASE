@@ -1,4 +1,4 @@
-package com.example.wtcapp.contatos
+package com.example.wtcapp.screens.contatos
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -16,7 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.wtcapp.topbar.TopBar
+import com.example.wtcapp.screens.topbar.TopBar
 
 @Composable
 fun ContactItem(name: String) {

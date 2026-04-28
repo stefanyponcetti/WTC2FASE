@@ -1,4 +1,4 @@
-package com.example.wtcapp.perfil
+package com.example.wtcapp.screens.perfil
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.wtcapp.topbar.TopBar
+import com.example.wtcapp.screens.topbar.TopBar
 import kotlinx.coroutines.launch
 
 @Composable

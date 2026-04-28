@@ -1,6 +1,5 @@
-package com.example.wtcapp.topbar
+package com.example.wtcapp.screens.topbar
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -17,12 +16,10 @@ fun TopBar(
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(56.dp)
-            .background(Color(0xFFFF0000))
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceEvenly

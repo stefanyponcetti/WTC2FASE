@@ -1,4 +1,4 @@
-package com.example.wtcapp.cadastro
+package com.example.wtcapp.screens.cadastro
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

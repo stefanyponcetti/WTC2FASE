@@ -1,4 +1,4 @@
-package com.example.wtcapp.criarcomunicado
+package com.example.wtcapp.screens.criarcomunicado
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

@@ -1,4 +1,4 @@
-package com.example.wtcapp.login
+package com.example.wtcapp.screens.login
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
