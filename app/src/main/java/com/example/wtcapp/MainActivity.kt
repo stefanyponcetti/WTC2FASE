@@ -94,22 +94,17 @@ class MainActivity : ComponentActivity() {
                         )
 
                         "perfil" -> PerfilScreen(
-                            nome = "Eliane Meliz Cruz",
-                            telefone = "(11) 98342-13421",
-                            email = "eli.meliz@wtc.com.br",
-                            dataNascimento = "02/03/1981",
-                            cargo = "Analista de Recursos Humanos",
-                            tempoEmpresa = "3 anos e 2 meses",
-                            unidade = "Av. Paulista • P Central",
-                            tipoUsuario = "Colaborador",
-                            onLogout = { screenStack.add("login") },
-
-                            // 🔥 IMPORTANTE: adiciona navegação pra TopBar funcionar
+                            idUsuario = "69c5cecee406f5ca4e7d5da1",
+                            onLogout = {
+                                screenStack.clear()
+                                screenStack.add("login")
+                            },
                             onNavigateToChats = { screenStack.add("chats") },
                             onNavigateToPerfil = { screenStack.add("perfil") },
                             onNavigateToComunicados = { screenStack.add("comunicados") },
                             onNavigateToContatos = { screenStack.add("contatos") }
                         )
+
                     }
                 }
             }
