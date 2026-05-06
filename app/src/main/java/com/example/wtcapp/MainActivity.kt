@@ -6,82 +6,157 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.example.wtcapp.screens.login.LoginScreen
-import com.example.wtcapp.screens.cadastro.CadastroScreen
-import com.example.wtcapp.screens.chats.ChatListScreen
-import com.example.wtcapp.screens.chats.ChatScreen
-import com.example.wtcapp.comunicados.ComunicadosScreen
-import com.example.wtcapp.redefinicaoSenha.RedefinirSenhaScreen
-import com.example.wtcapp.screens.contatos.ContatosScreen
-import com.example.wtcapp.screens.criarcomunicado.CriarComunicadoScreen
-import com.example.wtcapp.screens.perfil.PerfilScreen
+import com.example.wtcapp.data.SessionManager
+import com.example.wtcapp.ui.screens.cadastro.CadastroScreen
+import com.example.wtcapp.ui.screens.chats.ChatListScreen
+import com.example.wtcapp.ui.screens.chats.ChatScreen
+import com.example.wtcapp.ui.screens.comunicados.ComunicadosScreen
+import com.example.wtcapp.ui.screens.comunicados.CriarComunicadoScreen
+import com.example.wtcapp.ui.screens.contatos.ContatosScreen
+import com.example.wtcapp.ui.screens.login.LoginScreen
+import com.example.wtcapp.ui.screens.perfil.PerfilScreen
+import com.example.wtcapp.ui.screens.redefinicaoSenha.RedefinirSenhaScreen
 import com.example.wtcapp.ui.theme.WTCAPPTheme
+import com.example.wtcapp.ui.theme.laranja
 import com.google.firebase.FirebaseApp
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     override fun onCreate(savedInstanceState: Bundle?) {
         FirebaseApp.initializeApp(this)
         super.onCreate(savedInstanceState)
+
         setContent {
             WTCAPPTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val screenStack = remember { mutableStateListOf("login") }
+                    val sessionManager = remember { SessionManager(applicationContext) }
+                    val scope = rememberCoroutineScope()
+                    val screenStack = remember { mutableStateListOf<String>() }
+
                     var selectedChatId by remember { mutableStateOf("") }
                     var selectedChatName by remember { mutableStateOf("") }
+                    var jwtToken by remember { mutableStateOf<String?>(null) }
+                    var currentUserId by remember { mutableStateOf<String?>(null) }
+                    var isSessionLoaded by remember { mutableStateOf(false) }
 
-                    var jwtToken by remember { mutableStateOf("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiI2OWYwMTYwMGNlNTkxMjU1ZjhkNGYwMTMiLCJ1bmlxdWVfbmFtZSI6InN0cmluZyIsImVtYWlsIjoic3RyaW5nIiwibmJmIjoxNzc3MzQxOTU3LCJleHAiOjE3NzczNDU1NTcsImlhdCI6MTc3NzM0MTk1N30.iIfDExyDhQru3yxTJ5MUiapDQoOqQ79O86J_Uj-XgSw") }
-                    var currentUserId by remember { mutableStateOf("69c5cecee406f5ca4e7d5da1") }
+                    fun goToLogin() {
+                        screenStack.clear()
+                        screenStack.add("login")
+                    }
 
-                    val currentScreen = screenStack.last()
+                    fun goToChats() {
+                        screenStack.clear()
+                        screenStack.add("chats")
+                    }
+
+                    fun reloadSessionAfterLogin() {
+                        scope.launch {
+                            jwtToken = sessionManager.getToken()
+                            currentUserId = sessionManager.getUserId()
+                            if (!jwtToken.isNullOrBlank() && !currentUserId.isNullOrBlank()) {
+                                goToChats()
+                            } else {
+                                goToLogin()
+                            }
+                        }
+                    }
+
+                    LaunchedEffect(Unit) {
+                        jwtToken = sessionManager.getToken()
+                        currentUserId = sessionManager.getUserId()
+                        if (!jwtToken.isNullOrBlank() && !currentUserId.isNullOrBlank()) {
+                            goToChats()
+                        } else {
+                            goToLogin()
+                        }
+                        isSessionLoaded = true
+                    }
+
+                    if (!isSessionLoaded || screenStack.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = laranja)
+                        }
+                        return@Surface
+                    }
 
                     BackHandler(enabled = screenStack.size > 1) {
                         screenStack.removeLast()
                     }
 
+                    val currentScreen = screenStack.last()
+
                     when (currentScreen) {
                         "login" -> LoginScreen(
                             onNavigateToCadastro = { screenStack.add("cadastro") },
-                            onLoginSuccess = { screenStack.add("chats") },
+                            onLoginSuccess = { reloadSessionAfterLogin() },
                             onNavigateToRedefinirSenha = { screenStack.add("redefinirSenha") }
                         )
 
                         "redefinirSenha" -> RedefinirSenhaScreen(
-                            onBackToLogin = { screenStack.add("login") }
+                            onBackToLogin = { goToLogin() }
                         )
 
                         "cadastro" -> CadastroScreen(
-                            onNavigateToLogin = { screenStack.add("login") },
-                            onCadastroSuccess = { screenStack.add("login") }
+                            onNavigateToLogin = { goToLogin() },
+                            onCadastroSuccess = { goToLogin() }
                         )
 
-                        "chats" -> ChatListScreen(
-                            onNavigateToChats = { screenStack.add("chats") },
-                            onNavigateToPerfil = { screenStack.add("perfil") },
-                            onNavigateToComunicados = { screenStack.add("comunicados") },
-                            onNavigateToContatos = { screenStack.add("contatos") },
-                            onNavigateToNovaMensagem = { chatId, chatName ->
-                                selectedChatId = chatId
-                                selectedChatName = chatName
-                                screenStack.add("chat")
+                        "chats" -> {
+                            val token = jwtToken
+                            val userId = currentUserId
+                            if (token.isNullOrBlank() || userId.isNullOrBlank()) {
+                                goToLogin()
+                            } else {
+                                ChatListScreen(
+                                    jwtToken = token,
+                                    currentUserId = userId,
+                                    onNavigateToChats = { screenStack.add("chats") },
+                                    onNavigateToPerfil = { screenStack.add("perfil") },
+                                    onNavigateToComunicados = { screenStack.add("comunicados") },
+                                    onNavigateToContatos = { screenStack.add("contatos") },
+                                    onNavigateToNovaMensagem = { chatId, chatName ->
+                                        selectedChatId = chatId
+                                        selectedChatName = chatName
+                                        screenStack.add("chat")
+                                    }
+                                )
                             }
-                        )
+                        }
 
-                        "chat" -> ChatScreen(
-                            chatId = selectedChatId,
-                            chatName = selectedChatName,
-                            currentUserId = currentUserId,
-                            jwtToken = jwtToken,
-                            onBack = { screenStack.removeLast() }
-                        )
+                        "chat" -> {
+                            val token = jwtToken
+                            val userId = currentUserId
+                            if (token.isNullOrBlank() || userId.isNullOrBlank()) {
+                                goToLogin()
+                            } else {
+                                ChatScreen(
+                                    chatId = selectedChatId,
+                                    chatName = selectedChatName,
+                                    currentUserId = userId,
+                                    jwtToken = token,
+                                    onBack = { screenStack.removeLast() }
+                                )
+                            }
+                        }
 
                         "comunicados" -> ComunicadosScreen(
                             onNavigateToCriar = { screenStack.add("criarComunicado") },
@@ -95,27 +170,53 @@ class MainActivity : ComponentActivity() {
                             onBack = { screenStack.add("comunicados") }
                         )
 
-                        "contatos" -> ContatosScreen(
-                            onNavigateToChats = { screenStack.add("chats") },
-                            onNavigateToPerfil = { screenStack.add("perfil") },
-                            onNavigateToComunicados = { screenStack.add("comunicados") },
-                            onNavigateToContatos = { screenStack.add("contatos") }
-                        )
+                        "contatos" -> {
+                            val token = jwtToken
+                            val userId = currentUserId
+                            if (token.isNullOrBlank() || userId.isNullOrBlank()) {
+                                goToLogin()
+                            } else {
+                                ContatosScreen(
+                                    jwtToken = token,
+                                    currentUserId = userId,
+                                    onNavigateToChats = { screenStack.add("chats") },
+                                    onNavigateToPerfil = { screenStack.add("perfil") },
+                                    onNavigateToComunicados = { screenStack.add("comunicados") },
+                                    onNavigateToContatos = { screenStack.add("contatos") },
+                                    onNavigateToChat = { chatId, chatName ->
+                                        selectedChatId = chatId
+                                        selectedChatName = chatName
+                                        screenStack.add("chat")
+                                    }
+                                )
+                            }
+                        }
 
-                        "perfil" -> PerfilScreen(
-                            idUsuario = "69c5cecee406f5ca4e7d5da1",
-                            onLogout = {
-                                screenStack.clear()
-                                screenStack.add("login")
-                            },
-                            onNavigateToChats = { screenStack.add("chats") },
-                            onNavigateToPerfil = { screenStack.add("perfil") },
-                            onNavigateToComunicados = { screenStack.add("comunicados") },
-                            onNavigateToContatos = { screenStack.add("contatos") }
-                        )
-
+                        "perfil" -> {
+                            val userId = currentUserId
+                            if (userId.isNullOrBlank()) {
+                                goToLogin()
+                            } else {
+                                PerfilScreen(
+                                    idUsuario = userId,
+                                    onLogout = {
+                                        scope.launch {
+                                            sessionManager.clearSession()
+                                            jwtToken = null
+                                            currentUserId = null
+                                            goToLogin()
+                                        }
+                                    },
+                                    onNavigateToChats = { screenStack.add("chats") },
+                                    onNavigateToPerfil = { screenStack.add("perfil") },
+                                    onNavigateToComunicados = { screenStack.add("comunicados") },
+                                    onNavigateToContatos = { screenStack.add("contatos") }
+                                )
+                            }
+                        }
                     }
-                    FirebaseCrashlytics.getInstance().log("Tela "+ currentScreen+  " carregada")
+
+                    FirebaseCrashlytics.getInstance().log("Tela $currentScreen carregada")
                 }
             }
         }
