@@ -15,10 +15,6 @@ import com.example.wtcapp.screens.cadastro.CadastroScreen
 import com.example.wtcapp.screens.chats.ChatListScreen
 import com.example.wtcapp.screens.chats.ChatScreen
 import com.example.wtcapp.comunicados.ComunicadosScreen
-import com.example.wtcapp.contatos.ContatosScreen
-import com.example.wtcapp.criarcomunicado.CriarComunicadoScreen
-import com.example.wtcapp.mensagem.MensagemScreen
-import com.example.wtcapp.perfil.PerfilScreen
 import com.example.wtcapp.redefinicaoSenha.RedefinirSenhaScreen
 import com.example.wtcapp.screens.contatos.ContatosScreen
 import com.example.wtcapp.screens.criarcomunicado.CriarComunicadoScreen

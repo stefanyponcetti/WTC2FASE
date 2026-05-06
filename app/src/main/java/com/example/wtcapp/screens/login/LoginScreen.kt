@@ -26,6 +26,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.wtcapp.auth.GoogleAuthManager
+import com.example.wtcapp.login.ForgotPasswordRequest
+import com.example.wtcapp.login.LoginGoogleRequest
+import com.example.wtcapp.login.LoginRequest
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
 import com.google.firebase.crashlytics.FirebaseCrashlytics
@@ -194,7 +197,9 @@ fun LoginScreen(
                         // CHAMADA AO BACKEND
                         scope.launch {
                             try {
-                                val response = RetrofitClient.api2.forgotPassword(ForgotPasswordRequest(email))
+                                val response = RetrofitClient.api2.forgotPassword(
+                                    ForgotPasswordRequest(email)
+                                )
                                 if (response.isSuccess) {
                                     Toast.makeText(
                                         context1,

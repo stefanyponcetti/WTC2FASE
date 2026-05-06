@@ -1,6 +1,5 @@
 package com.example.wtcapp.login
 
-import java.time.LocalDate
 import java.util.Date
 
 data class LoginRequest(

@@ -1,5 +1,5 @@
 import android.os.Build
-import com.example.wtcapp.login.UserApi
+import com.example.wtcapp.services.UserApi
 import com.example.wtcapp.redefinicaoSenha.RedefinirSenhaApi
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
