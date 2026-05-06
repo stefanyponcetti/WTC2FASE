@@ -12,7 +12,20 @@
           "package_name": "com.example.wtcapp"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "709322502085-2p64fdoctt8vjbrbrk2j7sfreffvibc5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.wtcapp",
+            "certificate_hash": "98f09f42e257cf5024276d77b1817c523f0f979c"
+          }
+        },
+        {
+          "client_id": "709322502085-0rotrcvap2gdmdvqp5i0r3tg30v82kij.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAidMFg7u53gbsPaNAjr83dAJJa292wndc"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "709322502085-0rotrcvap2gdmdvqp5i0r3tg30v82kij.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

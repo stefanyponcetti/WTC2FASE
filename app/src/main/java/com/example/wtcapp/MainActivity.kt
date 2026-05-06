@@ -15,14 +15,22 @@ import com.example.wtcapp.screens.cadastro.CadastroScreen
 import com.example.wtcapp.screens.chats.ChatListScreen
 import com.example.wtcapp.screens.chats.ChatScreen
 import com.example.wtcapp.comunicados.ComunicadosScreen
+import com.example.wtcapp.contatos.ContatosScreen
+import com.example.wtcapp.criarcomunicado.CriarComunicadoScreen
+import com.example.wtcapp.mensagem.MensagemScreen
+import com.example.wtcapp.perfil.PerfilScreen
+import com.example.wtcapp.redefinicaoSenha.RedefinirSenhaScreen
 import com.example.wtcapp.screens.contatos.ContatosScreen
 import com.example.wtcapp.screens.criarcomunicado.CriarComunicadoScreen
 import com.example.wtcapp.screens.perfil.PerfilScreen
 import com.example.wtcapp.ui.theme.WTCAPPTheme
+import com.google.firebase.FirebaseApp
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     override fun onCreate(savedInstanceState: Bundle?) {
+        FirebaseApp.initializeApp(this)
         super.onCreate(savedInstanceState)
         setContent {
             WTCAPPTheme {
@@ -46,7 +54,12 @@ class MainActivity : ComponentActivity() {
                     when (currentScreen) {
                         "login" -> LoginScreen(
                             onNavigateToCadastro = { screenStack.add("cadastro") },
-                            onLoginSuccess = { screenStack.add("chats") }
+                            onLoginSuccess = { screenStack.add("chats") },
+                            onNavigateToRedefinirSenha = { screenStack.add("redefinirSenha") }
+                        )
+
+                        "redefinirSenha" -> RedefinirSenhaScreen(
+                            onBackToLogin = { screenStack.add("login") }
                         )
 
                         "cadastro" -> CadastroScreen(
@@ -106,6 +119,7 @@ class MainActivity : ComponentActivity() {
                         )
 
                     }
+                    FirebaseCrashlytics.getInstance().log("Tela "+ currentScreen+  " carregada")
                 }
             }
         }

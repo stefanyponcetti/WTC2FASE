@@ -1,5 +1,8 @@
 package com.example.wtcapp.screens.cadastro
 
+import android.os.Build
+import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -18,9 +22,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.wtcapp.login.RegisterRequest
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CadastroScreen(onNavigateToLogin: () -> Unit, onCadastroSuccess: () -> Unit) {
     val azulFundo = Color(0xFF384B5B)
@@ -35,6 +46,8 @@ fun CadastroScreen(onNavigateToLogin: () -> Unit, onCadastroSuccess: () -> Unit)
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
     var dataNascimento by remember { mutableStateOf("") }
+    var tipoUsuario by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
 
     Box(
         modifier = Modifier
@@ -196,45 +209,78 @@ fun CadastroScreen(onNavigateToLogin: () -> Unit, onCadastroSuccess: () -> Unit)
             Spacer(modifier = Modifier.height(24.dp))
 
             // Botão de cadastro
+            val scope = rememberCoroutineScope()
+            var context = LocalContext.current
             Button(
                 onClick = {
-                    if (email.isNotBlank() && senha.isNotBlank() && nome.isNotBlank()) {
-                        val dominioEmpresa = "wtc.com.br"
-                        val ehOperador = !isClient
+                    if (email.isBlank() || senha.isBlank() || nome.isBlank()) {
+                        Toast.makeText(context, "Preencha todos os campos obrigatórios.", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
 
-                        // Verifica o domínio se for operador
-                        if (ehOperador && !email.endsWith("@$dominioEmpresa")) {
-                            println("Apenas e-mails corporativos podem se cadastrar como operador.")
-                            return@Button
+                    val dominioEmpresa = "wtc.com.br"
+                    val ehOperador = !isClient
+
+                    if (ehOperador && !email.endsWith("@$dominioEmpresa")) {
+                        Toast.makeText(context, "Apenas e-mails corporativos podem se cadastrar como operador.", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    val tipoUsuario = if (isClient) "cliente" else "operador"
+                    scope.launch {
+                        try {
+                            // 1️⃣ REGISTRA NO BACKEND (Retrofit)
+                            val inputFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                            val date = LocalDate.parse(dataNascimento, inputFormatter)
+
+                            val isoString = date.atStartOfDay(ZoneId.systemDefault())
+                                .toInstant()
+                                .toString()
+
+                            val response = RetrofitClient.api.register(
+                                RegisterRequest(
+                                    tipoUsuario, nome, email, senha, isoString)
+                            )
+
+                            if (!response.isSuccessful) {
+                                Toast.makeText(context, "Erro no servidor: ${response.message()}", Toast.LENGTH_LONG).show()
+                                return@launch
+                            }
+
+                            // 2️⃣ CRIA USUÁRIO NO FIREBASE AUTH
+                            auth.createUserWithEmailAndPassword(email, senha)
+                                .addOnSuccessListener { result ->
+
+                                    val userId = result.user?.uid ?: return@addOnSuccessListener
+
+                                    // 3️⃣ SALVA PERFIL NO FIRESTORE
+                                    val userMap = hashMapOf(
+                                        "nome" to nome,
+                                        "email" to email,
+                                        "dataNascimento" to dataNascimento,
+                                        //"tipo" to if (ehOperador) "operador" else "cliente"
+                                    )
+
+                                    db.collection("users").document(userId)
+                                        .set(userMap)
+                                        .addOnSuccessListener {
+                                            Toast.makeText(context, "Cadastro concluído!", Toast.LENGTH_SHORT).show()
+                                        }
+                                        .addOnFailureListener { e ->
+                                            Toast.makeText(context, "Erro ao salvar dados: ${e.message}", Toast.LENGTH_LONG).show()
+                                            FirebaseCrashlytics.getInstance().recordException(RuntimeException(e))
+                                        }
+                                    onCadastroSuccess()
+                                    Toast.makeText(context, "Cadastro concluído!", Toast.LENGTH_SHORT).show()
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(context, "Erro no Firebase: ${e.message}", Toast.LENGTH_LONG).show()
+                                    FirebaseCrashlytics.getInstance().recordException(RuntimeException(e))
+                                }
+
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Erro ao conectar ao servidor.", Toast.LENGTH_LONG).show()
+                            FirebaseCrashlytics.getInstance().recordException(RuntimeException(e))
                         }
-
-                        // Cria o usuário no Firebase Auth
-                        auth.createUserWithEmailAndPassword(email, senha)
-                            .addOnSuccessListener { result ->
-                                val userId = result.user?.uid
-                                val tipoUsuario = if (ehOperador) "operador" else "cliente"
-
-                                val userMap = hashMapOf(
-                                    "nome" to nome,
-                                    "email" to email,
-                                    "dataNascimento" to dataNascimento,
-                                    "tipo" to tipoUsuario
-                                )
-
-                                db.collection("users").document(userId!!).set(userMap)
-                                    .addOnSuccessListener {
-                                        println("Usuário $tipoUsuario cadastrado com sucesso!")
-                                        onCadastroSuccess()
-                                    }
-                                    .addOnFailureListener { e ->
-                                        println("Erro ao salvar dados: ${e.message}")
-                                    }
-                            }
-                            .addOnFailureListener { e ->
-                                println("Erro ao criar conta: ${e.message}")
-                            }
-                    } else {
-                        println("Preencha todos os campos obrigatórios.")
                     }
                 },
                 modifier = Modifier
@@ -248,3 +294,4 @@ fun CadastroScreen(onNavigateToLogin: () -> Unit, onCadastroSuccess: () -> Unit)
         }
     }
 }
+
