@@ -36,4 +36,8 @@ object RetrofitClient {
     val passwordApi: RedefinirSenhaApi by lazy {
         retrofit.create(RedefinirSenhaApi::class.java)
     }
+
+    val profileApi: PerfilApiService by lazy {
+        retrofit.create(PerfilApiService::class.java)
+    }
 }

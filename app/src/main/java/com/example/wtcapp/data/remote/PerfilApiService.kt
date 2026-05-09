@@ -10,13 +10,13 @@ import retrofit2.http.Path
 interface PerfilApiService {
 
 
-    @GET("usuario/{id}")
+    @GET("/api/user/{id}")
     suspend fun buscarUsuario(
         @Path("id") id: String
     ): UsuarioDto
 
 
-    @PUT("usuario/{id}")
+    @PUT("/api/user/{id}")
     suspend fun atualizarUsuario(
         @Path("id") id: String,
         @Body usuario: UpdateUsuarioDto

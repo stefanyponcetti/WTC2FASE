@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.wtcapp.data.models.UpdateUsuarioDto
 import com.example.wtcapp.data.remote.PerfilApiService
+import com.example.wtcapp.data.remote.RetrofitClient
 import com.example.wtcapp.ui.theme.azulFundo
 import com.example.wtcapp.ui.theme.laranja
 import kotlinx.coroutines.launch
@@ -45,14 +46,6 @@ fun PerfilScreen(
 
     val scope = rememberCoroutineScope()
 
-    val api = remember {
-        Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:5107/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(PerfilApiService::class.java)
-    }
-
     var isEditing by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
     var mensagem by remember { mutableStateOf("") }
@@ -68,7 +61,7 @@ fun PerfilScreen(
 
     LaunchedEffect(idUsuario) {
         try {
-            val user = api.buscarUsuario(idUsuario)
+            val user = RetrofitClient.profileApi.buscarUsuario(idUsuario)
             nomeState = user.nome ?: ""
             emailState = user.email ?: ""
             telefoneState = user.telefone ?: ""
@@ -163,10 +156,10 @@ fun PerfilScreen(
                                         unidade = unidadeState
                                     )
 
-                                    api.atualizarUsuario(idUsuario, dto)
+                                    RetrofitClient.profileApi.atualizarUsuario(idUsuario, dto)
 
 
-                                    val atualizado = api.buscarUsuario(idUsuario)
+                                    val atualizado = RetrofitClient.profileApi.buscarUsuario(idUsuario)
 
                                     nomeState = atualizado.nome ?: ""
                                     emailState = atualizado.email ?: ""
