@@ -6,15 +6,12 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
 
-    // No seu arquivo de definições da API (ex: com.example.wtcapp.network.ApiService)
-    interface RedefinirSenhaApi {
-        // ... outros endpoints
+interface RedefinirSenhaApi {
+    @POST("/api/User/forgot-password")
+    suspend fun forgotPassword(@Body request: ForgotPasswordRequest): Response<Void>
 
-        @POST("/api/User/forgot-password")
-        suspend fun forgotPassword(@Body request: ForgotPasswordRequest): Response<Void>
-
-        @POST("/api/User/reset-password")
-        suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<Void>
-    }
+    @POST("/api/User/reset-password")
+    suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<Void>
+}
 
 

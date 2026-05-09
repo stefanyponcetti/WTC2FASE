@@ -193,11 +193,13 @@ class MainActivity : ComponentActivity() {
                         }
 
                         "perfil" -> {
+                            val token = jwtToken
                             val userId = currentUserId
                             if (userId.isNullOrBlank()) {
                                 goToLogin()
                             } else {
                                 PerfilScreen(
+                                    jwtToken = "Bearer $token",
                                     idUsuario = userId,
                                     onLogout = {
                                         scope.launch {
