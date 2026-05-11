@@ -22,9 +22,8 @@ class NotificacaoService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    override fun onCreate() {
-        super.onCreate()
-        createNotificationChannel()
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
                 notificationId,
@@ -34,11 +33,8 @@ class NotificacaoService : Service() {
         } else {
             startForeground(notificationId, buildForegroundNotification())
         }
-    }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val token = intent?.getStringExtra("token") ?: return START_NOT_STICKY
-        intent.getStringExtra("tipoCliente") ?: "externo"
 
         connectSignalR(token)
 
@@ -103,7 +99,7 @@ class NotificacaoService : Service() {
         val channel = NotificationChannel(
             channelId,
             "Comunicados",
-            NotificationManager.IMPORTANCE_HIGH
+            NotificationManager.IMPORTANCE_LOW
         ).apply {
             description = "Notificações de novos comunicados"
         }
