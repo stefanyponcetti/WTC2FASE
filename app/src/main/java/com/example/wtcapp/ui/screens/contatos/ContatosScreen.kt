@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -18,16 +19,27 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,13 +48,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.wtcapp.data.models.UpsertNoteRequest
 import com.example.wtcapp.data.models.UserModel
+import com.example.wtcapp.data.remote.RetrofitClient
 import com.example.wtcapp.ui.components.TopBar
 import com.example.wtcapp.ui.theme.azulFundo
 import com.example.wtcapp.ui.theme.cinzaCard
 import com.example.wtcapp.ui.theme.laranja
 import com.example.wtcapp.viewmodels.ContatosUiState
 import com.example.wtcapp.viewmodels.ContatosViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun ContactItem(
@@ -111,6 +127,7 @@ fun ContatosScreen(
     val uiState by viewModel.uiState.collectAsState(initial = ContatosUiState())
 
     var isInternal by remember { mutableStateOf(true) }
+    var selectedContact by remember { mutableStateOf<UserModel?>(null) }
 
     LaunchedEffect(uiState.navigateToChatId, uiState.navigateToChatName) {
         val chatId = uiState.navigateToChatId
@@ -141,21 +158,34 @@ fun ContatosScreen(
             uiState = uiState,
             isInternal = isInternal,
             onInternalChanged = { isInternal = it },
-            onContactClick = { user ->
-                viewModel.startPrivateChat(user.id, user.nome)
-            },
+            onCargoSelected = viewModel::onCargoSelected,
+            onContactClick = { user -> selectedContact = user },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         )
     }
+
+    selectedContact?.let { user ->
+        ContactDetailDialog(
+            user = user,
+            jwtToken = jwtToken,
+            onDismiss = { selectedContact = null },
+            onStartChat = {
+                selectedContact = null
+                viewModel.startPrivateChat(user.id, user.nome)
+            }
+        )
+    }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ContatosContent(
     uiState: ContatosUiState,
     isInternal: Boolean,
     onInternalChanged: (Boolean) -> Unit,
+    onCargoSelected: (String) -> Unit,
     onContactClick: (UserModel) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -188,7 +218,55 @@ private fun ContatosContent(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (isInternal) {
+            var expandedCargo by remember { mutableStateOf(false) }
+
+            ExposedDropdownMenuBox(
+                expanded = expandedCargo,
+                onExpandedChange = { expandedCargo = !expandedCargo },
+                modifier = Modifier.padding(horizontal = 16.dp)
+            ) {
+                OutlinedTextField(
+                    value = uiState.selectedCargo,
+                    onValueChange = {},
+                    label = { Text("Cargo", color = Color.White) },
+                    readOnly = true,
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCargo)
+                    },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = laranja,
+                        unfocusedBorderColor = Color.Gray,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedLabelColor = laranja,
+                        unfocusedLabelColor = Color.Gray
+                    )
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedCargo,
+                    onDismissRequest = { expandedCargo = false }
+                ) {
+                    uiState.cargos.forEach { cargo ->
+                        DropdownMenuItem(
+                            text = { Text(cargo) },
+                            onClick = {
+                                onCargoSelected(cargo)
+                                expandedCargo = false
+                            }
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        } else {
+            Spacer(modifier = Modifier.height(8.dp))
+        }
 
         when {
             uiState.isLoading -> {
@@ -216,7 +294,14 @@ private fun ContatosContent(
             }
 
             else -> {
-                val contacts = if (isInternal) uiState.internos else uiState.externos
+                val contacts = if (isInternal) {
+                    uiState.internos.filter { user ->
+                        uiState.selectedCargo == "Todos" ||
+                            user.cargo == uiState.selectedCargo
+                    }
+                } else {
+                    uiState.externos
+                }
 
                 if (contacts.isEmpty()) {
                     Box(
@@ -244,4 +329,142 @@ private fun ContatosContent(
             }
         }
     }
+}
+
+@Composable
+private fun ContactDetailDialog(
+    user: UserModel,
+    jwtToken: String,
+    onDismiss: () -> Unit,
+    onStartChat: () -> Unit
+) {
+    var note by remember { mutableStateOf("") }
+    var isLoadingNote by remember { mutableStateOf(true) }
+    var isSavingNote by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(user.id) {
+        try {
+            val result = RetrofitClient.chatApi.getContactNote(
+                "Bearer $jwtToken",
+                user.id
+            )
+            note = result.note
+        } catch (_: Exception) {
+        }
+        isLoadingNote = false
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = cinzaCard,
+        title = {
+            Column {
+                Text(
+                    user.nome,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+                Text(
+                    user.email,
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 13.sp
+                )
+                if (!user.cargo.isNullOrBlank()) {
+                    Text(
+                        user.cargo,
+                        color = laranja,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        },
+        text = {
+            Column {
+                Text(
+                    "Anotação privada",
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 12.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                if (isLoadingNote) {
+                    CircularProgressIndicator(
+                        color = laranja,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else {
+                    OutlinedTextField(
+                        value = note,
+                        onValueChange = { note = it },
+                        placeholder = { Text("Escreva uma anotação...", color = Color.Gray) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 80.dp),
+                        maxLines = 5,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = laranja,
+                            unfocusedBorderColor = Color.Gray,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            cursorColor = laranja
+                        )
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            isSavingNote = true
+                            try {
+                                RetrofitClient.chatApi.upsertContactNote(
+                                    "Bearer $jwtToken",
+                                    user.id,
+                                    UpsertNoteRequest(note)
+                                )
+                            } catch (_: Exception) {
+                            }
+                            isSavingNote = false
+                            onStartChat()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = laranja),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Iniciar conversa")
+                }
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            isSavingNote = true
+                            try {
+                                RetrofitClient.chatApi.upsertContactNote(
+                                    "Bearer $jwtToken",
+                                    user.id,
+                                    UpsertNoteRequest(note)
+                                )
+                            } catch (_: Exception) {
+                            }
+                            isSavingNote = false
+                            onDismiss()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        if (isSavingNote) "Salvando..." else "Salvar anotação",
+                        color = Color.White
+                    )
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Fechar", color = Color.White.copy(alpha = 0.6f))
+            }
+        }
+    )
 }

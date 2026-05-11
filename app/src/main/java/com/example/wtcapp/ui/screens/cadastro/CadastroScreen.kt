@@ -40,7 +40,6 @@ fun CadastroScreen(onNavigateToLogin: () -> Unit, onCadastroSuccess: () -> Unit)
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
     val focusManager = LocalFocusManager.current
-    val dominioEmpresa = "wtc.com.br"
 
     var isClient by remember { mutableStateOf(true) }
     var nome by remember { mutableStateOf("") }
@@ -71,7 +70,7 @@ fun CadastroScreen(onNavigateToLogin: () -> Unit, onCadastroSuccess: () -> Unit)
                 Text("Já possui cadastro? Clique aqui.", color = Color.White)
             }
 
-            // Switch Cliente / Operador
+            // Switch Externo / Interno
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(
@@ -80,7 +79,7 @@ fun CadastroScreen(onNavigateToLogin: () -> Unit, onCadastroSuccess: () -> Unit)
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = if (isClient) "Cliente" else "Operador",
+                    text = if (isClient) "Externo" else "Interno",
                     style = MaterialTheme.typography.bodyLarge,
                     color = Color.White
                 )
@@ -226,7 +225,7 @@ fun CadastroScreen(onNavigateToLogin: () -> Unit, onCadastroSuccess: () -> Unit)
                         Toast.makeText(context, "Apenas e-mails corporativos podem se cadastrar como operador.", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
-                    val tipoUsuario = if (isClient) "cliente" else "operador"
+                    val tipoUsuario = if (isClient) "externo" else "interno"
                     scope.launch {
                         try {
                             // 1️⃣ REGISTRA NO BACKEND (Retrofit)

@@ -15,14 +15,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class ChatListUiState(
-    val gruposInternos: List<ChatModel> = emptyList(),
-    val gruposExternos: List<ChatModel> = emptyList(),
+    val grupos: List<ChatModel> = emptyList(),
     val privadosInternos: List<ChatModel> = emptyList(),
     val privadosExternos: List<ChatModel> = emptyList(),
     val users: List<UserModel> = emptyList(),
     val userNames: Map<String, String> = emptyMap(),
     val userTypes: Map<String, String> = emptyMap(),
-    val chatMembers: Map<String, List<String>> = emptyMap(),
     val isLoading: Boolean = false,
     val isCreatingGroup: Boolean = false,
     val error: String? = null,
@@ -36,6 +34,7 @@ class ChatListViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ChatListUiState())
     val uiState = _uiState.asStateFlow()
+    private var chatMembers: Map<String, List<String>> = emptyMap()
 
     init {
         loadChats()
@@ -57,7 +56,7 @@ class ChatListViewModel(
                     return chat.members ?: fallbackMembersMap[chat.id].orEmpty()
                 }
 
-                fun classifyChat(chat: ChatModel): Boolean {
+                fun isInternalPrivateChat(chat: ChatModel): Boolean {
                     val otherMembers = membersOf(chat).filter { userId -> userId != currentUserId }
                     if (otherMembers.isEmpty()) return true
 
@@ -68,17 +67,16 @@ class ChatListViewModel(
 
                 val grupos = chats.filter { chat -> chat.isGroup }
                 val privados = chats.filter { chat -> !chat.isGroup }
+                chatMembers = fallbackMembersMap
 
                 _uiState.update {
                     it.copy(
-                        gruposInternos = grupos.filter { chat -> classifyChat(chat) },
-                        gruposExternos = grupos.filter { chat -> !classifyChat(chat) },
-                        privadosInternos = privados.filter { chat -> classifyChat(chat) },
-                        privadosExternos = privados.filter { chat -> !classifyChat(chat) },
+                        grupos = grupos,
+                        privadosInternos = privados.filter { chat -> isInternalPrivateChat(chat) },
+                        privadosExternos = privados.filter { chat -> !isInternalPrivateChat(chat) },
                         users = users.filter { user -> user.id != currentUserId },
                         userNames = userNames,
                         userTypes = userTypes,
-                        chatMembers = fallbackMembersMap,
                         isLoading = false,
                         error = null
                     )
@@ -115,7 +113,7 @@ class ChatListViewModel(
     fun getChatDisplayName(chat: ChatModel): String {
         if (chat.isGroup) return chat.groupName ?: "Grupo"
 
-        val members = chat.members ?: _uiState.value.chatMembers[chat.id] ?: return "Chat privado"
+        val members = chat.members ?: chatMembers[chat.id] ?: return "Chat privado"
         val otherId = members.firstOrNull { memberId -> memberId != currentUserId }
             ?: return "Chat privado"
 

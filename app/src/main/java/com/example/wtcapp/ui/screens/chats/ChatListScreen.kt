@@ -68,8 +68,6 @@ fun ChatSection(
     currentUserId: String,
     onNavigateToNovaMensagem: (String, String) -> Unit
 ) {
-    if (chats.isEmpty()) return
-
     var isExpanded by remember { mutableStateOf(true) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -96,14 +94,23 @@ fun ChatSection(
         HorizontalDivider(color = Color.White.copy(alpha = 0.16f))
 
         AnimatedVisibility(visible = isExpanded) {
-            LazyColumn {
-                items(chats, key = { chat -> chat.id }) { chat ->
-                    ChatRow(
-                        chat = chat,
-                        chatName = viewModel.getChatDisplayName(chat),
-                        currentUserId = currentUserId,
-                        onNavigateToNovaMensagem = onNavigateToNovaMensagem
-                    )
+            if (chats.isEmpty()) {
+                Text(
+                    text = "Nenhuma conversa ainda",
+                    color = Color.White.copy(alpha = 0.5f),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            } else {
+                LazyColumn {
+                    items(chats, key = { chat -> chat.id }) { chat ->
+                        ChatRow(
+                            chat = chat,
+                            chatName = viewModel.getChatDisplayName(chat),
+                            currentUserId = currentUserId,
+                            onNavigateToNovaMensagem = onNavigateToNovaMensagem
+                        )
+                    }
                 }
             }
         }
@@ -322,15 +329,8 @@ private fun ChatListContent(
         else -> {
             Column(modifier = modifier) {
                 ChatSection(
-                    title = "GRUPOS INTERNOS",
-                    chats = uiState.gruposInternos,
-                    viewModel = viewModel,
-                    currentUserId = currentUserId,
-                    onNavigateToNovaMensagem = onNavigateToNovaMensagem
-                )
-                ChatSection(
-                    title = "GRUPOS EXTERNOS",
-                    chats = uiState.gruposExternos,
+                    title = "GRUPOS",
+                    chats = uiState.grupos,
                     viewModel = viewModel,
                     currentUserId = currentUserId,
                     onNavigateToNovaMensagem = onNavigateToNovaMensagem

@@ -10,14 +10,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Campaign
-import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -39,6 +37,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,13 +53,19 @@ import androidx.compose.ui.unit.sp
 import com.example.wtcapp.ui.theme.azulFundo
 import com.example.wtcapp.ui.theme.cinzaCard
 import com.example.wtcapp.ui.theme.laranja
-import kotlinx.coroutines.delay
+import com.example.wtcapp.viewmodels.ComunicadosUiState
+import com.example.wtcapp.viewmodels.ComunicadosViewModel
 import kotlinx.coroutines.launch
 
-// 🎨 Paleta de cores oficial
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CriarComunicadoScreen(onBack: () -> Unit) {
+fun CriarComunicadoScreen(
+    jwtToken: String,
+    onBack: () -> Unit
+) {
+    val viewModel = remember { ComunicadosViewModel(jwtToken) }
+    val uiState by viewModel.uiState.collectAsState(initial = ComunicadosUiState())
+
     var titulo by remember { mutableStateOf("") }
     var descricao by remember { mutableStateOf("") }
     var categoria by remember { mutableStateOf("Geral") }
@@ -67,15 +73,26 @@ fun CriarComunicadoScreen(onBack: () -> Unit) {
     var dataValidade by remember { mutableStateOf("") }
     var expandedCategoria by remember { mutableStateOf(false) }
     var expandedDestinatarios by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
-    var imagemAnexada by remember { mutableStateOf(false) }
 
     val categorias = listOf("Geral", "Aviso Importante", "Evento", "Manutenção")
-    val opcoesDestinatarios = listOf("Todos", "Gestores", "Colaboradores", "Participantes", "Visitantes")
-
+    val opcoesDestinatarios = listOf("Todos", "Interno", "Externo")
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
+
+    LaunchedEffect(uiState.savedSuccess) {
+        if (uiState.savedSuccess) {
+            viewModel.onSavedHandled()
+            onBack()
+        }
+    }
+
+    LaunchedEffect(uiState.error) {
+        val error = uiState.error
+        if (!error.isNullOrBlank()) {
+            snackbarHostState.showSnackbar(error)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -96,7 +113,6 @@ fun CriarComunicadoScreen(onBack: () -> Unit) {
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = azulFundo
     ) { innerPadding ->
-
         Column(
             modifier = Modifier
                 .padding(innerPadding)
@@ -105,7 +121,6 @@ fun CriarComunicadoScreen(onBack: () -> Unit) {
                 .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Ícone e título
             Icon(
                 imageVector = Icons.Default.Campaign,
                 contentDescription = null,
@@ -121,7 +136,6 @@ fun CriarComunicadoScreen(onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Card principal
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -133,7 +147,6 @@ fun CriarComunicadoScreen(onBack: () -> Unit) {
                 ) {
                     Text("Informações Gerais", color = Color.LightGray, fontWeight = FontWeight.SemiBold)
 
-                    // Campo título
                     OutlinedTextField(
                         value = titulo,
                         onValueChange = { titulo = it },
@@ -143,7 +156,6 @@ fun CriarComunicadoScreen(onBack: () -> Unit) {
                         colors = customFieldColors()
                     )
 
-                    // Campo descrição
                     OutlinedTextField(
                         value = descricao,
                         onValueChange = { if (it.length <= 500) descricao = it },
@@ -162,7 +174,6 @@ fun CriarComunicadoScreen(onBack: () -> Unit) {
                         modifier = Modifier.align(Alignment.End)
                     )
 
-                    // Categoria
                     ExposedDropdownMenuBox(
                         expanded = expandedCategoria,
                         onExpandedChange = { expandedCategoria = !expandedCategoria }
@@ -194,7 +205,6 @@ fun CriarComunicadoScreen(onBack: () -> Unit) {
                         }
                     }
 
-                    // Destinatários
                     ExposedDropdownMenuBox(
                         expanded = expandedDestinatarios,
                         onExpandedChange = { expandedDestinatarios = !expandedDestinatarios }
@@ -226,116 +236,53 @@ fun CriarComunicadoScreen(onBack: () -> Unit) {
                         }
                     }
 
-                    // Campo data
                     OutlinedTextField(
                         value = dataValidade,
                         onValueChange = { dataValidade = it },
                         label = { Text("Data de validade") },
-                        placeholder = { Text("Ex: 30/10/2025") },
+                        placeholder = { Text("yyyy-MM-dd") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         colors = customFieldColors()
                     )
-
-                    // Botão de upload (simulado)
-                    OutlinedButton(
-                        onClick = {
-                            imagemAnexada = true
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Imagem adicionada com sucesso!")
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
-                    ) {
-                        Icon(Icons.Default.Upload, contentDescription = null, tint = laranja)
-                        Spacer(Modifier.width(8.dp))
-                        Text(if (imagemAnexada) "Imagem anexada" else "Adicionar imagem ou ícone")
-                    }
                 }
             }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Botão Lista de convidados
-                Button(
-                    onClick = { /* TODO: ação para lista de convidados */ },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Gray),
-                    shape = RoundedCornerShape(13.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(58.dp)
-                ) {
-                    Text("Lista de convidados", color = Color.White, fontSize = 11.sp)
-                }
-
-                // Botão Publicar
-                Button(
-                    onClick = { /* TODO: ação para publicar comunicado */ },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF001F9F)), // Azul escuro
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(53.dp)
-                ) {
-                    Text("Publicar", color = Color.White, fontSize = 13.sp)
-                }
-
-                // Botão Enviar remessa
-                Button(
-                    onClick = { /* TODO: ação para enviar remessa */ },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8000)), // Laranja
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(51.dp)
-                ) {
-                    Text("Enviar remessa", color = Color.White, fontSize = 13.sp)
-                }
-            }
-
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Botões inferiores
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedButton(
-                    onClick = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Visualização prévia não implementada ainda.")
-                        }
-                    },
+                    onClick = onBack,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = laranja)
                 ) {
-                    Text("Visualizar")
+                    Text("Cancelar")
                 }
 
                 Button(
                     onClick = {
-                        isLoading = true
                         scope.launch {
-                            delay(1500)
-                            snackbarHostState.showSnackbar("Comunicado publicado com sucesso!")
-                            isLoading = false
-                            onBack()
+                            viewModel.createComunicado(
+                                titulo = titulo,
+                                descricao = descricao,
+                                categoria = categoria,
+                                destinatarios = destinatarios,
+                                dataValidade = dataValidade
+                            )
                         }
                     },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(containerColor = laranja),
-                    enabled = !isLoading && titulo.isNotBlank() && descricao.isNotBlank()
+                    enabled = !uiState.isSaving && titulo.isNotBlank() && descricao.isNotBlank() && dataValidade.isNotBlank()
                 ) {
-                    if (isLoading)
+                    if (uiState.isSaving) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
-                    else
-                        Text("Publicar")
+                    } else {
+                        Text("Salvar")
+                    }
                 }
             }
 

@@ -14,11 +14,18 @@ private val Context.sessionDataStore by preferencesDataStore(name = "session")
 class SessionManager(private val context: Context) {
     private val tokenKey = stringPreferencesKey("jwt_token")
     private val userIdKey = stringPreferencesKey("user_id")
+    private val tipoClienteKey = stringPreferencesKey("tipo_cliente")
 
     suspend fun saveSession(token: String, userId: String) {
         context.sessionDataStore.edit { preferences ->
             preferences[tokenKey] = token
             preferences[userIdKey] = userId
+        }
+    }
+
+    suspend fun saveTipoCliente(tipoCliente: String) {
+        context.sessionDataStore.edit { preferences ->
+            preferences[tipoClienteKey] = tipoCliente
         }
     }
 
@@ -34,10 +41,17 @@ class SessionManager(private val context: Context) {
             .first()
     }
 
+    suspend fun getTipoCliente(): String? {
+        return context.sessionDataStore.data
+            .map { preferences -> preferences[tipoClienteKey] }
+            .first()
+    }
+
     suspend fun clearSession() {
         context.sessionDataStore.edit { preferences ->
             preferences.remove(tokenKey)
             preferences.remove(userIdKey)
+            preferences.remove(tipoClienteKey)
         }
     }
 

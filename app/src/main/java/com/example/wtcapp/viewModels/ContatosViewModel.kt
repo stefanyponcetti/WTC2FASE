@@ -12,6 +12,8 @@ import kotlinx.coroutines.launch
 data class ContatosUiState(
     val internos: List<UserModel> = emptyList(),
     val externos: List<UserModel> = emptyList(),
+    val cargos: List<String> = emptyList(),
+    val selectedCargo: String = "Todos",
     val isLoading: Boolean = false,
     val error: String? = null,
     val navigateToChatId: String? = null,
@@ -36,6 +38,9 @@ class ContatosViewModel(
             try {
                 val users = RetrofitClient.chatApi.getUsers("Bearer $jwtToken")
                     .filter { user -> user.id != currentUserId }
+                val cargos = runCatching {
+                    RetrofitClient.chatApi.getCargos("Bearer $jwtToken")
+                }.getOrDefault(emptyList())
                 val internos = users.filter { user -> user.tipoCliente.lowercase() == "interno" }
                 val externos = users.filter { user -> user.tipoCliente.lowercase() != "interno" }
 
@@ -43,6 +48,7 @@ class ContatosViewModel(
                     it.copy(
                         internos = internos,
                         externos = externos,
+                        cargos = listOf("Todos") + cargos,
                         isLoading = false,
                         error = null
                     )
@@ -56,6 +62,10 @@ class ContatosViewModel(
                 }
             }
         }
+    }
+
+    fun onCargoSelected(cargo: String) {
+        _uiState.update { it.copy(selectedCargo = cargo) }
     }
 
     fun startPrivateChat(targetUserId: String, targetName: String) {

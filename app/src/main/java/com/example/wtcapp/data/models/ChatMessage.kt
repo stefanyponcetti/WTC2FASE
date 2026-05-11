@@ -7,5 +7,6 @@ data class ChatMessage(
     @SerializedName("chatId") val chatId: String,
     @SerializedName("senderId") val senderId: String,
     @SerializedName("text") val text: String,
-    @SerializedName(value = "sentAt", alternate = ["sentDate"]) val sentAt: String
+    @SerializedName(value = "sentAt", alternate = ["sentDate"]) val sentAt: String,
+    @SerializedName("status") val status: String = "Enviado"
 )

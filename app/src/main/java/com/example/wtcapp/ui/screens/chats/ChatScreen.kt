@@ -47,13 +47,16 @@ import androidx.compose.ui.unit.dp
 import com.example.wtcapp.viewmodels.ChatViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import com.example.wtcapp.ui.theme.azulFundo
 import com.example.wtcapp.ui.theme.cinzaCard
 import com.example.wtcapp.ui.theme.laranja
-import com.example.wtcapp.viewmodels.ChatUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,7 +71,7 @@ fun ChatScreen(
         ChatViewModel(chatId, currentUserId, jwtToken)
     }
 
-    val uiState by viewModel.uiState.collectAsState(initial = ChatUiState())
+    val uiState by viewModel.uiState.collectAsState()
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
@@ -181,12 +184,21 @@ fun ChatScreen(
                             Column {
                                 Text(text = message.text, color = Color.White, style = MaterialTheme.typography.bodyMedium)
                                 Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = timeLabel,
-                                    color = Color.White.copy(alpha = 0.6f),
-                                    style = MaterialTheme.typography.labelSmall,
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.End,
                                     modifier = Modifier.align(Alignment.End)
-                                )
+                                ) {
+                                    Text(
+                                        text = timeLabel,
+                                        color = Color.White.copy(alpha = 0.6f),
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                    if (isMe) {
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        StatusIcon(message.status)
+                                    }
+                                }
                             }
                         }
                     }
@@ -194,4 +206,22 @@ fun ChatScreen(
             }
         }
     }
+}
+
+@Composable
+private fun StatusIcon(status: String) {
+    val (icon, tint) = when (status) {
+        "Lido" -> Icons.Default.DoneAll to laranja
+        "Entregue" -> Icons.Default.DoneAll to Color.White.copy(alpha = 0.6f)
+        "Enviado" -> Icons.Default.Done to Color.White.copy(alpha = 0.6f)
+        "Falha" -> Icons.Default.Error to Color.Red
+        else -> Icons.Default.Schedule to Color.White.copy(alpha = 0.4f)
+    }
+
+    Icon(
+        imageVector = icon,
+        contentDescription = status,
+        tint = tint,
+        modifier = Modifier.size(14.dp)
+    )
 }

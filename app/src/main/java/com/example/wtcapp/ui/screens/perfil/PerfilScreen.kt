@@ -1,6 +1,8 @@
 package com.example.wtcapp.ui.screens.perfil
 
+import android.app.DatePickerDialog
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -12,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -20,6 +23,7 @@ import com.example.wtcapp.data.remote.RetrofitClient
 import com.example.wtcapp.ui.theme.azulFundo
 import com.example.wtcapp.ui.theme.laranja
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 fun converterData(data: String): String? {
     return try {
@@ -43,6 +47,7 @@ fun PerfilScreen(
 ) {
 
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     var isEditing by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
@@ -54,6 +59,7 @@ fun PerfilScreen(
     var dataState by remember { mutableStateOf("") }
     var unidadeState by remember { mutableStateOf("") }
     var cargo by remember { mutableStateOf("") }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     var notificationsEnabled by remember { mutableStateOf(true) }
 
@@ -110,8 +116,25 @@ fun PerfilScreen(
             ProfileField("Nome", nomeState, Icons.Default.Person, isEditing) { nomeState = it }
             ProfileField("Email", emailState, Icons.Default.Email, isEditing) { emailState = it }
             ProfileField("Telefone", telefoneState, Icons.Default.Phone, isEditing) { telefoneState = it }
-            ProfileField("Nascimento", dataState, Icons.Default.DateRange, isEditing) { dataState = it }
-            ProfileField("Cargo", cargo, Icons.Default.Work, false, readOnly = true)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+                    .then(if (isEditing) Modifier.clickable { showDatePicker = true } else Modifier),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.DateRange, null, tint = laranja)
+                Spacer(modifier = Modifier.width(8.dp))
+                Column {
+                    Text("Nascimento", color = Color.Gray, fontSize = 12.sp)
+                    Text(
+                        text = if (dataState.isBlank()) "Selecionar data" else dataState,
+                        color = if (isEditing) laranja else Color.White,
+                        fontSize = 16.sp
+                    )
+                }
+            }
+            ProfileField("Cargo", cargo, Icons.Default.Work, isEditing) { cargo = it }
             ProfileField("Unidade", unidadeState, Icons.Default.Place, isEditing) { unidadeState = it }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -151,7 +174,8 @@ fun PerfilScreen(
                                         email = emailState,
                                         telefone = telefoneState,
                                         dataNascimento = converterData(dataState),
-                                        unidade = unidadeState
+                                        unidade = unidadeState,
+                                        cargo = cargo
                                     )
 
                                     RetrofitClient.api.atualizarUsuario(jwtToken ?: "",idUsuario, dto)
@@ -201,6 +225,25 @@ fun PerfilScreen(
                     color = if (mensagem.startsWith("Erro")) Color.Red else Color.Green
                 )
             }
+        }
+    }
+
+    if (showDatePicker) {
+        val calendar = Calendar.getInstance()
+
+        LaunchedEffect(Unit) {
+            DatePickerDialog(
+                context,
+                { _, year, month, day ->
+                    dataState = "%02d/%02d/%04d".format(day, month + 1, year)
+                    showDatePicker = false
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+            ).apply {
+                setOnDismissListener { showDatePicker = false }
+            }.show()
         }
     }
 }
