@@ -77,41 +77,30 @@ fun LoginScreen(
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
 
-            try {
-                val account = task.getResult(ApiException::class.java)
-                val idToken = account.idToken
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
 
-                if (idToken == null) {
-                    errorMessage = "Token do Google invalido"
-                    return@rememberLauncherForActivityResult
-                }
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val idToken = account.idToken
 
-                scope.launch {
-                    try {
-                        val loginResult = authRepository.loginGoogle(idToken)
-                        if (loginResult.success) {
-                            onLoginSuccess()
-                        } else {
-                            errorMessage = loginResult.message
-                            FirebaseCrashlytics.getInstance()
-                                .recordException(RuntimeException(errorMessage))
-                        }
-                    } catch (e: Exception) {
-                        errorMessage = "Erro ao conectar com servidor: ${e.message}"
-                        FirebaseCrashlytics.getInstance()
-                            .recordException(RuntimeException(errorMessage))
-                    }
-                }
-            } catch (e: ApiException) {
-                errorMessage = "Erro Google: ${e.statusCode}"
-                FirebaseCrashlytics.getInstance().recordException(RuntimeException(errorMessage))
+            if (idToken.isNullOrBlank()) {
+                errorMessage = "Token do Google inválido"
+                return@rememberLauncherForActivityResult
             }
-        } else {
-            errorMessage = "Login cancelado ou falhou"
-            FirebaseCrashlytics.getInstance().recordException(RuntimeException(errorMessage))
+
+            scope.launch {
+                val loginResult = authRepository.loginGoogle(idToken)
+                if (loginResult.success) {
+                    onLoginSuccess()
+                } else {
+                    errorMessage = loginResult.message
+                }
+            }
+
+        } catch (e: ApiException) {
+            errorMessage = "Erro Google statusCode: ${e.statusCode}"
+            FirebaseCrashlytics.getInstance().recordException(e)
         }
     }
 

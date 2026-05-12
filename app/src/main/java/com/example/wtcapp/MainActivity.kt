@@ -151,11 +151,8 @@ class MainActivity : ComponentActivity() {
                                 putExtra("token", token)
                                 putExtra("tipoCliente", tipoCliente)
                             }
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                context.startForegroundService(intent)
-                            } else {
-                                context.startService(intent)
-                            }
+
+                            context.startService(intent)
                         }
                     }
 

@@ -16,7 +16,7 @@ data class RegisterRequest(
     val name: String,
     val email: String,
     val senha: String,
-    val data_Nasc: String
+    val dataNascimento: String
 )
 
 data class ForgotPasswordRequest(
@@ -28,7 +28,7 @@ data class RegisterResponse(
     val name : String,
     val email: String,
     val senha : String,
-    val data_Nasc : Date
+    val dataNascimento : Date
 )
 data class LoginResponse(
     val success: Boolean,
