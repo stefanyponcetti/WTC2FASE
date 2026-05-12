@@ -211,7 +211,7 @@ fun ChatScreen(
 @Composable
 private fun StatusIcon(status: String) {
     val (icon, tint) = when (status) {
-        "Lido" -> Icons.Default.DoneAll to laranja
+        "Lido" -> Icons.Default.DoneAll to azulFundo
         "Entregue" -> Icons.Default.DoneAll to Color.White.copy(alpha = 0.6f)
         "Enviado" -> Icons.Default.Done to Color.White.copy(alpha = 0.6f)
         "Falha" -> Icons.Default.Error to Color.Red

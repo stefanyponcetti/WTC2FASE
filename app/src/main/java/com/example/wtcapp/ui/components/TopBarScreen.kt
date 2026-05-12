@@ -54,7 +54,7 @@ fun TopBar(
 
             IconButton(onClick = { onNavigate("contatos") }) {
                 Icon(
-                    imageVector = Icons.Default.Phone,
+                    imageVector = Icons.Default.EventNote,
                     contentDescription = "Contatos",
                     tint = MaterialTheme.colorScheme.onPrimary
                 )
