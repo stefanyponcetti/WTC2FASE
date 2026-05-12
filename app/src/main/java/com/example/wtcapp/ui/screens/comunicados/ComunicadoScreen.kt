@@ -57,7 +57,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.wtcapp.data.models.ComunicadoModel
+import com.example.wtcapp.ui.components.DatePickerField
 import com.example.wtcapp.ui.components.TopBar
+import com.example.wtcapp.ui.components.converterDataParaApiDateOnly
+import com.example.wtcapp.ui.components.formatarDataParaExibicao
 import com.example.wtcapp.ui.theme.azulFundo
 import com.example.wtcapp.ui.theme.cinzaCard
 import com.example.wtcapp.ui.theme.laranja
@@ -80,7 +83,11 @@ fun ComunicadosScreen(
     val azulGradiente = Brush.verticalGradient(
         colors = listOf(Color(0xFF3F5466), Color(0xFF2E3D4A))
     )
-    val isInternal = tipoCliente.lowercase() == "interno"
+    val tipoClienteNormalizado = tipoCliente.trim().lowercase()
+    val canManageComunicados = tipoClienteNormalizado == "interno"
+    val comunicadosVisiveis = uiState.comunicados.filter { comunicado ->
+        podeVisualizarComunicado(comunicado.destinatarios, tipoClienteNormalizado)
+    }
     var editandoComunicado by remember { mutableStateOf<ComunicadoModel?>(null) }
 
     Scaffold(
@@ -97,7 +104,7 @@ fun ComunicadosScreen(
             )
         },
         floatingActionButton = {
-            if (isInternal) {
+            if (canManageComunicados) {
                 FloatingActionButton(
                     onClick = onNavigateToCriar,
                     containerColor = laranja,
@@ -170,13 +177,19 @@ fun ComunicadosScreen(
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         items(
-                            items = uiState.comunicados,
+                            items = comunicadosVisiveis,
                             key = { comunicado -> comunicado.id }
                         ) { comunicado ->
+                            val canManageItem = canManageComunicados && comunicado.podeEditar
                             AnimatedVisibility(visible = true, enter = fadeIn(), exit = fadeOut()) {
                                 ComunicadoItem(
                                     comunicado = comunicado,
-                                    onDelete = { viewModel.deleteComunicado(comunicado.id) },
+                                    canManage = canManageItem,
+                                    onDelete = {
+                                        if (canManageItem) {
+                                            viewModel.deleteComunicado(comunicado.id)
+                                        }
+                                    },
                                     onEdit = { editandoComunicado = it }
                                 )
                             }
@@ -188,7 +201,7 @@ fun ComunicadosScreen(
     }
 
     editandoComunicado?.let { comunicado ->
-        if (comunicado.podeEditar) {
+        if (canManageComunicados && comunicado.podeEditar) {
             EditarComunicadoDialog(
                 comunicado = comunicado,
                 onDismiss = { editandoComunicado = null },
@@ -209,9 +222,17 @@ fun ComunicadosScreen(
     }
 }
 
+private fun podeVisualizarComunicado(destinatarios: String?, tipoCliente: String): Boolean {
+    val dest = destinatarios?.trim()?.lowercase()
+    val tipo = tipoCliente.trim().lowercase()
+
+    return dest == "todos" || dest == tipo
+}
+
 @Composable
 private fun ComunicadoItem(
     comunicado: ComunicadoModel,
+    canManage: Boolean,
     onDelete: () -> Unit,
     onEdit: (ComunicadoModel) -> Unit
 ) {
@@ -219,7 +240,10 @@ private fun ComunicadoItem(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(6.dp, RoundedCornerShape(14.dp))
-            .clickable { onEdit(comunicado) },
+            .then(
+                if (canManage) Modifier.clickable { onEdit(comunicado) }
+                else Modifier
+            ),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = cinzaCard)
     ) {
@@ -236,7 +260,7 @@ private fun ComunicadoItem(
                     fontSize = 19.sp,
                     modifier = Modifier.weight(1f)
                 )
-                if (comunicado.podeEditar) {
+                if (canManage) {
                     IconButton(
                         onClick = onDelete,
                         modifier = Modifier.size(24.dp)
@@ -285,9 +309,7 @@ private fun EditarComunicadoDialog(
     var descricao by remember { mutableStateOf(comunicado.descricao) }
     var categoria by remember { mutableStateOf(comunicado.categoria) }
     var destinatarios by remember { mutableStateOf(comunicado.destinatarios) }
-    var dataValidade by remember {
-        mutableStateOf(comunicado.dataValidade.take(10))
-    }
+    var dataValidade by remember { mutableStateOf(formatarDataParaExibicao(comunicado.dataValidade)) }
     var expandedCategoria by remember { mutableStateOf(false) }
     var expandedDestinatarios by remember { mutableStateOf(false) }
 
@@ -378,24 +400,25 @@ private fun EditarComunicadoDialog(
                         }
                     }
                 }
-                OutlinedTextField(
+                DatePickerField(
+                    label = "Data de validade",
                     value = dataValidade,
-                    onValueChange = { dataValidade = it },
-                    label = { Text("Data de validade") },
-                    placeholder = { Text("yyyy-MM-dd") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = customFieldColors()
+                    onDateSelected = { dataValidade = it },
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    onSave(titulo, descricao, categoria, destinatarios, dataValidade)
+                    val dataValidadeApi = converterDataParaApiDateOnly(dataValidade) ?: return@Button
+                    onSave(titulo, descricao, categoria, destinatarios, dataValidadeApi)
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = laranja),
-                enabled = !isSaving && titulo.isNotBlank() && descricao.isNotBlank()
+                enabled = !isSaving &&
+                    titulo.isNotBlank() &&
+                    descricao.isNotBlank() &&
+                    converterDataParaApiDateOnly(dataValidade) != null
             ) {
                 if (isSaving) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp))

@@ -41,14 +41,19 @@ class ContatosViewModel(
                 val cargos = runCatching {
                     RetrofitClient.chatApi.getCargos("Bearer $jwtToken")
                 }.getOrDefault(emptyList())
-                val internos = users.filter { user -> user.tipoCliente.lowercase() == "interno" }
-                val externos = users.filter { user -> user.tipoCliente.lowercase() != "interno" }
+                val internos = users.filter { user -> user.tipoCliente.trim().lowercase() == "interno" }
+                val externos = users.filter { user -> user.tipoCliente.trim().lowercase() != "interno" }
+                val cargosDisponiveis = (cargos + users.mapNotNull { user -> user.cargo })
+                    .map { cargo -> cargo.trim() }
+                    .filter { cargo -> cargo.isNotBlank() }
+                    .distinctBy { cargo -> cargo.lowercase() }
+                    .sortedWith(String.CASE_INSENSITIVE_ORDER)
 
                 _uiState.update {
                     it.copy(
                         internos = internos,
                         externos = externos,
-                        cargos = listOf("Todos") + cargos,
+                        cargos = listOf("Todos") + cargosDisponiveis,
                         isLoading = false,
                         error = null
                     )

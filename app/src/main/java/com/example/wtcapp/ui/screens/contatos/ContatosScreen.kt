@@ -157,7 +157,10 @@ fun ContatosScreen(
         ContatosContent(
             uiState = uiState,
             isInternal = isInternal,
-            onInternalChanged = { isInternal = it },
+            onInternalChanged = {
+                isInternal = it
+                viewModel.onCargoSelected("Todos")
+            },
             onCargoSelected = viewModel::onCargoSelected,
             onContactClick = { user -> selectedContact = user },
             modifier = Modifier
@@ -220,53 +223,49 @@ private fun ContatosContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        if (isInternal) {
-            var expandedCargo by remember { mutableStateOf(false) }
+        var expandedCargo by remember { mutableStateOf(false) }
 
-            ExposedDropdownMenuBox(
-                expanded = expandedCargo,
-                onExpandedChange = { expandedCargo = !expandedCargo },
-                modifier = Modifier.padding(horizontal = 16.dp)
-            ) {
-                OutlinedTextField(
-                    value = uiState.selectedCargo,
-                    onValueChange = {},
-                    label = { Text("Cargo", color = Color.White) },
-                    readOnly = true,
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCargo)
-                    },
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = laranja,
-                        unfocusedBorderColor = Color.Gray,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedLabelColor = laranja,
-                        unfocusedLabelColor = Color.Gray
-                    )
+        ExposedDropdownMenuBox(
+            expanded = expandedCargo,
+            onExpandedChange = { expandedCargo = !expandedCargo },
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
+            OutlinedTextField(
+                value = uiState.selectedCargo,
+                onValueChange = {},
+                label = { Text("Cargo", color = Color.White) },
+                readOnly = true,
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCargo)
+                },
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = laranja,
+                    unfocusedBorderColor = Color.Gray,
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedLabelColor = laranja,
+                    unfocusedLabelColor = Color.Gray
                 )
-                ExposedDropdownMenu(
-                    expanded = expandedCargo,
-                    onDismissRequest = { expandedCargo = false }
-                ) {
-                    uiState.cargos.forEach { cargo ->
-                        DropdownMenuItem(
-                            text = { Text(cargo) },
-                            onClick = {
-                                onCargoSelected(cargo)
-                                expandedCargo = false
-                            }
-                        )
-                    }
+            )
+            ExposedDropdownMenu(
+                expanded = expandedCargo,
+                onDismissRequest = { expandedCargo = false }
+            ) {
+                uiState.cargos.forEach { cargo ->
+                    DropdownMenuItem(
+                        text = { Text(cargo) },
+                        onClick = {
+                            onCargoSelected(cargo)
+                            expandedCargo = false
+                        }
+                    )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
-        } else {
-            Spacer(modifier = Modifier.height(8.dp))
         }
+        Spacer(modifier = Modifier.height(8.dp))
 
         when {
             uiState.isLoading -> {
@@ -294,13 +293,9 @@ private fun ContatosContent(
             }
 
             else -> {
-                val contacts = if (isInternal) {
-                    uiState.internos.filter { user ->
-                        uiState.selectedCargo == "Todos" ||
-                            user.cargo == uiState.selectedCargo
-                    }
-                } else {
-                    uiState.externos
+                val baseContacts = if (isInternal) uiState.internos else uiState.externos
+                val contacts = baseContacts.filter { user ->
+                    cargoMatches(user.cargo, uiState.selectedCargo)
                 }
 
                 if (contacts.isEmpty()) {
@@ -329,6 +324,11 @@ private fun ContatosContent(
             }
         }
     }
+}
+
+private fun cargoMatches(userCargo: String?, selectedCargo: String): Boolean {
+    return selectedCargo.trim().equals("Todos", ignoreCase = true) ||
+        userCargo?.trim()?.equals(selectedCargo.trim(), ignoreCase = true) == true
 }
 
 @Composable

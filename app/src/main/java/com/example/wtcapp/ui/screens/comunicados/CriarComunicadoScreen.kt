@@ -50,6 +50,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.wtcapp.ui.components.DatePickerField
+import com.example.wtcapp.ui.components.converterDataParaApiDateOnly
 import com.example.wtcapp.ui.theme.azulFundo
 import com.example.wtcapp.ui.theme.cinzaCard
 import com.example.wtcapp.ui.theme.laranja
@@ -236,14 +238,11 @@ fun CriarComunicadoScreen(
                         }
                     }
 
-                    OutlinedTextField(
+                    DatePickerField(
+                        label = "Data de validade",
                         value = dataValidade,
-                        onValueChange = { dataValidade = it },
-                        label = { Text("Data de validade") },
-                        placeholder = { Text("yyyy-MM-dd") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = customFieldColors()
+                        onDateSelected = { dataValidade = it },
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
@@ -264,13 +263,21 @@ fun CriarComunicadoScreen(
 
                 Button(
                     onClick = {
+                        val dataValidadeApi = converterDataParaApiDateOnly(dataValidade)
+                        if (dataValidadeApi.isNullOrBlank()) {
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Selecione uma data de validade válida.")
+                            }
+                            return@Button
+                        }
+
                         scope.launch {
                             viewModel.createComunicado(
                                 titulo = titulo,
                                 descricao = descricao,
                                 categoria = categoria,
                                 destinatarios = destinatarios,
-                                dataValidade = dataValidade
+                                dataValidade = dataValidadeApi
                             )
                         }
                     },

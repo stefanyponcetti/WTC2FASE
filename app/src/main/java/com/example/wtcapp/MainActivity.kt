@@ -289,6 +289,14 @@ class MainActivity : ComponentActivity() {
                                 PerfilScreen(
                                     jwtToken = "Bearer $token",
                                     idUsuario = userId,
+                                    tipoCliente = tipoCliente,
+                                    onBack = {
+                                        if (screenStack.size > 1) {
+                                            screenStack.removeLast()
+                                        } else {
+                                            goToChats()
+                                        }
+                                    },
                                     onLogout = {
                                         scope.launch {
                                             sessionManager.clearSession()

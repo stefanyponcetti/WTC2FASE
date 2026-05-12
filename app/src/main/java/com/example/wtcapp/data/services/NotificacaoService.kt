@@ -15,6 +15,7 @@ import io.reactivex.rxjava3.core.Single
 class NotificacaoService : Service() {
 
     private var hubConnection: HubConnection? = null
+    private var tipoCliente: String = ""
 
     private val comunicadosChannelId = "comunicados_channel"
 
@@ -27,6 +28,9 @@ class NotificacaoService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val token = intent?.getStringExtra("token")
+        intent?.getStringExtra("tipoCliente")
+            ?.takeIf { it.isNotBlank() }
+            ?.let { tipoCliente = it }
 
         if (token.isNullOrBlank()) {
             stopSelf()
@@ -49,7 +53,9 @@ class NotificacaoService : Service() {
         hubConnection?.on(
             "NovoComunicado",
             { notificacao: ComunicadoNotificacao ->
-                showNotification(notificacao)
+                if (tipoCliente.isBlank() || podeVisualizarComunicado(notificacao.destinatarios, tipoCliente)) {
+                    showNotification(notificacao)
+                }
             },
             ComunicadoNotificacao::class.java
         )
@@ -104,5 +110,12 @@ class NotificacaoService : Service() {
         super.onDestroy()
         hubConnection?.stop()
         hubConnection = null
+    }
+
+    private fun podeVisualizarComunicado(destinatarios: String?, tipoCliente: String): Boolean {
+        val dest = destinatarios?.trim()?.lowercase()
+        val tipo = tipoCliente.trim().lowercase()
+
+        return dest == "todos" || dest == tipo
     }
 }

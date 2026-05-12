@@ -1,7 +1,5 @@
 package com.example.wtcapp.data.models
 
-import java.util.Date
-
 data class LoginRequest(
     val email: String,
     val senha: String
@@ -28,7 +26,7 @@ data class RegisterResponse(
     val name : String,
     val email: String,
     val senha : String,
-    val dataNascimento : Date
+    val dataNascimento : String?
 )
 data class LoginResponse(
     val success: Boolean,

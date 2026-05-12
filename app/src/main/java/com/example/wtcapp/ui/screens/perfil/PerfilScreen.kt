@@ -1,12 +1,19 @@
 package com.example.wtcapp.ui.screens.perfil
 
-import android.app.DatePickerDialog
+import android.Manifest
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,27 +25,35 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.wtcapp.data.models.UpdateNotificacoesRequest
 import com.example.wtcapp.data.models.UpdateUsuarioDto
 import com.example.wtcapp.data.remote.RetrofitClient
+import com.example.wtcapp.data.services.NotificacaoService
+import com.example.wtcapp.ui.components.DatePickerField
+import com.example.wtcapp.ui.components.converterDataParaApi
+import com.example.wtcapp.ui.components.formatarDataParaExibicao
 import com.example.wtcapp.ui.theme.azulFundo
 import com.example.wtcapp.ui.theme.laranja
 import kotlinx.coroutines.launch
-import java.util.Calendar
 
-fun converterData(data: String): String? {
-    return try {
-        val partes = data.trim().split("/")
-        if (partes.size == 3) "${partes[2]}-${partes[1]}-${partes[0]}T00:00:00"
-        else null
-    } catch (e: Exception) {
-        null
-    }
+private fun startNotificacaoService(context: Context, token: String, tipoCliente: String) {
+    val intent = Intent(context, NotificacaoService::class.java)
+    intent.putExtra("token", token.removePrefix("Bearer ").trim())
+    intent.putExtra("tipoCliente", tipoCliente)
+    context.startService(intent)
+}
+
+private fun stopNotificacaoService(context: Context) {
+    val intent = Intent(context, NotificacaoService::class.java)
+    context.stopService(intent)
 }
 
 @Composable
 fun PerfilScreen(
     idUsuario: String,
     jwtToken: String?,
+    tipoCliente: String = "",
+    onBack: () -> Unit,
     onLogout: () -> Unit,
     onNavigateToChats: () -> Unit,
     onNavigateToPerfil: () -> Unit,
@@ -59,9 +74,54 @@ fun PerfilScreen(
     var dataState by remember { mutableStateOf("") }
     var unidadeState by remember { mutableStateOf("") }
     var cargo by remember { mutableStateOf("") }
-    var showDatePicker by remember { mutableStateOf(false) }
 
     var notificationsEnabled by remember { mutableStateOf(true) }
+    var loadingNotifications by remember { mutableStateOf(false) }
+    var pendingNotificationRollback by remember { mutableStateOf(true) }
+
+    fun updateNotificationPreference(newValue: Boolean, previousValue: Boolean) {
+        notificationsEnabled = newValue
+        loadingNotifications = true
+        mensagem = ""
+
+        scope.launch {
+            try {
+                val response = RetrofitClient.api.atualizarNotificacoes(
+                    jwtToken ?: "",
+                    idUsuario,
+                    UpdateNotificacoesRequest(newValue)
+                )
+
+                if (!response.success) {
+                    throw IllegalStateException(response.message ?: "Não foi possível atualizar a preferência.")
+                }
+
+                notificationsEnabled = response.notificacoesAtivas
+                if (response.notificacoesAtivas) {
+                    startNotificacaoService(context, jwtToken ?: "", tipoCliente)
+                } else {
+                    stopNotificacaoService(context)
+                }
+            } catch (e: Exception) {
+                notificationsEnabled = previousValue
+                mensagem = "Erro ao atualizar notificações: ${e.message}"
+            } finally {
+                loadingNotifications = false
+            }
+        }
+    }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            updateNotificationPreference(true, pendingNotificationRollback)
+        } else {
+            notificationsEnabled = pendingNotificationRollback
+            loadingNotifications = false
+            mensagem = "Permissão de notificações negada."
+        }
+    }
 
     LaunchedEffect(idUsuario) {
         try {
@@ -71,7 +131,8 @@ fun PerfilScreen(
             telefoneState = user.telefone ?: ""
             unidadeState = user.unidade ?: ""
             cargo = user.cargo ?: ""
-            dataState = user.dataNascimento ?: ""
+            dataState = formatarDataParaExibicao(user.dataNascimento)
+            notificationsEnabled = user.notificacoesAtivas ?: true
         } catch (e: Exception) {
             mensagem = "Erro ao carregar perfil"
         }
@@ -88,7 +149,21 @@ fun PerfilScreen(
                 .verticalScroll(rememberScrollState())
         ) {
 
-            Text("PERFIL", fontSize = 26.sp, color = Color.White)
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Voltar",
+                        tint = Color.White
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                Text("PERFIL", fontSize = 26.sp, color = Color.White)
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -106,7 +181,26 @@ fun PerfilScreen(
                     Text("Notificações", color = Color.White, modifier = Modifier.weight(1f))
                     Switch(
                         checked = notificationsEnabled,
-                        onCheckedChange = { notificationsEnabled = it }
+                        enabled = !loadingNotifications,
+                        onCheckedChange = { newValue ->
+                            val previousValue = notificationsEnabled
+
+                            if (
+                                newValue &&
+                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                ) != PackageManager.PERMISSION_GRANTED
+                            ) {
+                                notificationsEnabled = newValue
+                                loadingNotifications = true
+                                pendingNotificationRollback = previousValue
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            } else {
+                                updateNotificationPreference(newValue, previousValue)
+                            }
+                        }
                     )
                 }
             }
@@ -116,24 +210,15 @@ fun PerfilScreen(
             ProfileField("Nome", nomeState, Icons.Default.Person, isEditing) { nomeState = it }
             ProfileField("Email", emailState, Icons.Default.Email, isEditing) { emailState = it }
             ProfileField("Telefone", telefoneState, Icons.Default.Phone, isEditing) { telefoneState = it }
-            Row(
+            DatePickerField(
+                label = "Nascimento",
+                value = dataState,
+                onDateSelected = { dataState = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 6.dp)
-                    .then(if (isEditing) Modifier.clickable { showDatePicker = true } else Modifier),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Default.DateRange, null, tint = laranja)
-                Spacer(modifier = Modifier.width(8.dp))
-                Column {
-                    Text("Nascimento", color = Color.Gray, fontSize = 12.sp)
-                    Text(
-                        text = if (dataState.isBlank()) "Selecionar data" else dataState,
-                        color = if (isEditing) laranja else Color.White,
-                        fontSize = 16.sp
-                    )
-                }
-            }
+                    .padding(vertical = 6.dp),
+                enabled = isEditing
+            )
             ProfileField("Cargo", cargo, Icons.Default.Work, isEditing) { cargo = it }
             ProfileField("Unidade", unidadeState, Icons.Default.Place, isEditing) { unidadeState = it }
 
@@ -173,7 +258,7 @@ fun PerfilScreen(
                                         nome = nomeState,
                                         email = emailState,
                                         telefone = telefoneState,
-                                        dataNascimento = converterData(dataState),
+                                        dataNascimento = converterDataParaApi(dataState),
                                         unidade = unidadeState,
                                         cargo = cargo
                                     )
@@ -188,7 +273,7 @@ fun PerfilScreen(
                                     telefoneState = atualizado.telefone ?: ""
                                     unidadeState = atualizado.unidade ?: ""
                                     cargo = atualizado.cargo ?: ""
-                                    dataState = atualizado.dataNascimento ?: ""
+                                    dataState = formatarDataParaExibicao(atualizado.dataNascimento)
 
                                     mensagem = "Atualizado com sucesso!"
                                     isEditing = false
@@ -228,24 +313,6 @@ fun PerfilScreen(
         }
     }
 
-    if (showDatePicker) {
-        val calendar = Calendar.getInstance()
-
-        LaunchedEffect(Unit) {
-            DatePickerDialog(
-                context,
-                { _, year, month, day ->
-                    dataState = "%02d/%02d/%04d".format(day, month + 1, year)
-                    showDatePicker = false
-                },
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-            ).apply {
-                setOnDismissListener { showDatePicker = false }
-            }.show()
-        }
-    }
 }
 
 @Composable

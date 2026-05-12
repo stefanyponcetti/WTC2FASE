@@ -7,5 +7,6 @@ data class UsuarioDto(
     val telefone: String,
     val dataNascimento: String?,
     val cargo: String?,
-    val unidade: String?
+    val unidade: String?,
+    val notificacoesAtivas: Boolean?
 )

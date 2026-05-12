@@ -58,6 +58,6 @@ class AuthRepository(private val sessionManager: SessionManager) {
         }
 
         sessionManager.saveSession(token, userId)
-        return AuthResult(body.success, body.message)
+        return AuthResult(true, "Login realizado com sucesso.")
     }
 }
