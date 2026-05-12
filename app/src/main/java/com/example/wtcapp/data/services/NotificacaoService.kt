@@ -77,7 +77,7 @@ class NotificacaoService : Service() {
                 NotificationCompat.BigTextStyle()
                     .bigText(notificacao.descricao)
             )
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setAutoCancel(true)
             .build()
 
