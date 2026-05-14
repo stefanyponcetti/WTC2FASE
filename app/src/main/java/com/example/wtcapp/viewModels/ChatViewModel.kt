@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 
 data class ChatUiState(
     val messages: List<ChatMessage> = emptyList(),
@@ -66,6 +67,16 @@ class ChatViewModel(
 
                 _uiState.update { state ->
                     if (state.messages.any { message -> message.id == normalizedMessage.id }) return@update state
+                    val optimisticIndex = state.messages.indexOfFirst { message ->
+                        message.id.startsWith(OPTIMISTIC_MESSAGE_PREFIX) &&
+                            message.senderId == normalizedMessage.senderId &&
+                            message.text == normalizedMessage.text
+                    }
+                    if (optimisticIndex >= 0) {
+                        val updatedMessages = state.messages.toMutableList()
+                        updatedMessages[optimisticIndex] = normalizedMessage
+                        return@update state.copy(messages = updatedMessages)
+                    }
                     shouldAcknowledge = normalizedMessage.senderId != currentUserId
                     state.copy(messages = state.messages + normalizedMessage)
                 }
@@ -127,8 +138,36 @@ class ChatViewModel(
     }
 
     fun sendMessage(text: String) {
-        if (text.isBlank()) return
-        repository.sendMessage(chatId, text)
+        val trimmedText = text.trim()
+        if (trimmedText.isBlank()) return
+
+        val optimisticMessage = ChatMessage(
+            id = "$OPTIMISTIC_MESSAGE_PREFIX${System.currentTimeMillis()}",
+            chatId = chatId,
+            senderId = currentUserId,
+            text = trimmedText,
+            sentAt = Instant.now().toString(),
+            status = "Enviado"
+        )
+
+        _uiState.update { state ->
+            state.copy(messages = state.messages + optimisticMessage)
+        }
+
+        val sent = repository.sendMessage(chatId, trimmedText)
+        if (!sent) {
+            _uiState.update { state ->
+                state.copy(
+                    messages = state.messages.map { message ->
+                        if (message.id == optimisticMessage.id) {
+                            message.copy(status = "Falha")
+                        } else {
+                            message
+                        }
+                    }
+                )
+            }
+        }
     }
 
     override fun onCleared() {
@@ -137,4 +176,8 @@ class ChatViewModel(
     }
 
     fun isMe(senderId: String) = senderId == currentUserId
+
+    companion object {
+        private const val OPTIMISTIC_MESSAGE_PREFIX = "local-"
+    }
 }

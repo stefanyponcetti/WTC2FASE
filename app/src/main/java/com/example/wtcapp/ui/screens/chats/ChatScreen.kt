@@ -68,7 +68,7 @@ fun ChatScreen(
     jwtToken: String,
     onBack: () -> Unit
 ) {
-    val viewModel = remember {
+    val viewModel = remember(chatId, currentUserId, jwtToken) {
         ChatViewModel(chatId, currentUserId, jwtToken)
     }
 

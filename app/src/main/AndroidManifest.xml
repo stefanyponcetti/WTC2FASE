@@ -19,7 +19,8 @@
         android:theme="@style/Theme.WTCAPP">
         <service
             android:name=".data.services.NotificacaoService"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <activity
             android:name=".MainActivity"
