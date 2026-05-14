@@ -54,6 +54,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import com.example.wtcapp.ui.components.formatChatTime
 import com.example.wtcapp.ui.theme.azulFundo
 import com.example.wtcapp.ui.theme.cinzaCard
 import com.example.wtcapp.ui.theme.laranja
@@ -162,7 +163,7 @@ fun ChatScreen(
                 items(uiState.messages, key = { it.id }) { message ->
                     // Balão de mensagem
                     val isMe = viewModel.isMe(message.senderId)
-                    val timeLabel = if (message.sentAt.length >= 16) message.sentAt.substring(11, 16) else message.sentAt
+                    val timeLabel = formatChatTime(message.sentAt)
 
                     Column(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),

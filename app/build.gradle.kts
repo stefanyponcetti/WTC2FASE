@@ -33,6 +33,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "11"
@@ -78,4 +79,5 @@ dependencies {
     implementation("com.google.gms:google-services:4.4.1")
     implementation("com.google.firebase:firebase-crashlytics-ktx:18.6.2")
     implementation("com.google.firebase:firebase-analytics-ktx:22.0.2")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }

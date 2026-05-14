@@ -21,6 +21,7 @@ class ChatViewModel(
     private val jwtToken: String
 ) : ViewModel() {
     private val repository = ChatRepository(jwtToken)
+    private val pendingStatusUpdates = mutableMapOf<String, String>()
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState = _uiState.asStateFlow()
@@ -37,6 +38,7 @@ class ChatViewModel(
 
             try {
                 val history = repository.getHistory(chatId)
+                    .map { message -> message.copy(status = normalizeStatus(message.status)) }
                 val historyIds = history.map { message -> message.id }.toSet()
 
                 _uiState.update { state ->
@@ -54,37 +56,69 @@ class ChatViewModel(
     private fun collectMessages() {
         viewModelScope.launch {
             repository.incomingMessages.collect { newMessage ->
-                android.util.Log.d("ChatVM", "Mensagem recebida na UI: ${newMessage.text}")
+                val status = pendingStatusUpdates.remove(newMessage.id) ?: normalizeStatus(newMessage.status)
+                val normalizedMessage = newMessage.copy(status = status)
+                android.util.Log.d(
+                    "ChatVM",
+                    "ReceiveMessage recebido na UI: id=${normalizedMessage.id}, sender=${normalizedMessage.senderId}"
+                )
+                var shouldAcknowledge = false
+
                 _uiState.update { state ->
-                    if (state.messages.any { message -> message.id == newMessage.id }) return@update state
-                    if (newMessage.senderId != currentUserId) {
-                        repository.confirmDelivery(newMessage.id)
-                    }
-                    state.copy(messages = state.messages + newMessage)
+                    if (state.messages.any { message -> message.id == normalizedMessage.id }) return@update state
+                    shouldAcknowledge = normalizedMessage.senderId != currentUserId
+                    state.copy(messages = state.messages + normalizedMessage)
+                }
+
+                if (shouldAcknowledge) {
+                    repository.confirmDelivery(normalizedMessage.id)
+                    repository.markAsRead(chatId)
                 }
             }
         }
 
         viewModelScope.launch {
             repository.statusUpdates.collect { update ->
-                _uiState.update { state ->
-                    val updated = state.messages.map { message ->
-                        if (message.id == update.messageId) {
-                            ChatMessage(
-                                id = message.id,
-                                chatId = message.chatId,
-                                senderId = message.senderId,
-                                text = message.text,
-                                sentAt = message.sentAt,
-                                status = update.status
-                            )
-                        } else {
-                            message
-                        }
-                    }
-                    state.copy(messages = updated)
-                }
+                val normalizedStatus = normalizeStatus(update.status)
+                android.util.Log.d(
+                    "ChatVM",
+                    "MessageStatusUpdated recebido na UI: ${update.messageId} -> $normalizedStatus"
+                )
+                updateMessageStatus(update.messageId, normalizedStatus)
             }
+        }
+    }
+
+    private fun updateMessageStatus(messageId: String, status: String) {
+        var messageFound = false
+
+        _uiState.update { state ->
+            state.copy(
+                messages = state.messages.map { message ->
+                    if (message.id == messageId) {
+                        messageFound = true
+                        message.copy(status = status)
+                    } else {
+                        message
+                    }
+                }
+            )
+        }
+
+        android.util.Log.d("ChatVM", "Status atualizado no estado: messageId=$messageId, found=$messageFound")
+        if (!messageFound) {
+            pendingStatusUpdates[messageId] = status
+            android.util.Log.d("ChatVM", "Status pendente armazenado: messageId=$messageId, status=$status")
+        }
+    }
+
+    private fun normalizeStatus(status: String): String {
+        return when (status.trim().lowercase()) {
+            "read", "lido" -> "Lido"
+            "delivered", "entregue" -> "Entregue"
+            "sent", "enviado" -> "Enviado"
+            "failed", "falha" -> "Falha"
+            else -> status
         }
     }
 

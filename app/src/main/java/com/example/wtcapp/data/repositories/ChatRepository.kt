@@ -31,12 +31,12 @@ class ChatRepository(private val jwtToken: String) {
             .build()
 
         hubConnection!!.on("ReceiveMessage", { msg: ChatMessage ->
-            android.util.Log.d("SignalR", "Mensagem recebida: ${msg.text}")
+            android.util.Log.d("SignalR", "ReceiveMessage recebido: id=${msg.id}, status=${msg.status}")
             _incomingMessages.tryEmit(msg)
         }, ChatMessage::class.java)
 
         hubConnection!!.on("MessageStatusUpdated", { update: MessageStatusUpdate ->
-            android.util.Log.d("SignalR", "Status atualizado: ${update.messageId} -> ${update.status}")
+            android.util.Log.d("SignalR", "MessageStatusUpdated recebido: ${update.messageId} -> ${update.status}")
             _statusUpdates.tryEmit(update)
         }, MessageStatusUpdate::class.java)
 
@@ -44,7 +44,7 @@ class ChatRepository(private val jwtToken: String) {
             .doOnComplete {
                 android.util.Log.d("SignalR", "Conectado ao chat $chatId")
                 joinChat(chatId)
-                hubConnection?.invoke("MarkAsRead", chatId)
+                markAsRead(chatId)
             }
             .doOnError { error ->
                 android.util.Log.e("SignalR", "Erro conexao: ${error.message}")
@@ -61,19 +61,33 @@ class ChatRepository(private val jwtToken: String) {
     }
 
     fun sendMessage(chatId: String, text: String) {
-        hubConnection?.invoke("SendMessage", chatId, text)
+        invokeHub("SendMessage", chatId, text)
     }
 
     fun confirmDelivery(messageId: String) {
-        hubConnection?.invoke("ConfirmDelivery", messageId)
+        android.util.Log.d("SignalR", "ConfirmDelivery enviado: messageId=$messageId")
+        invokeHub("ConfirmDelivery", messageId)
+    }
+
+    fun markAsRead(chatId: String) {
+        android.util.Log.d("SignalR", "MarkAsRead enviado: chatId=$chatId")
+        invokeHub("MarkAsRead", chatId)
     }
 
     private fun joinChat(chatId: String) {
-        hubConnection?.invoke("JoinChat", chatId)
+        invokeHub("JoinChat", chatId)
     }
 
     private fun leaveChat(chatId: String) {
-        hubConnection?.invoke("LeaveChat", chatId)
+        invokeHub("LeaveChat", chatId)
+    }
+
+    private fun invokeHub(method: String, vararg args: Any) {
+        hubConnection?.invoke(method, *args)
+            ?.subscribe(
+                { android.util.Log.d("SignalR", "$method concluido") },
+                { error -> android.util.Log.e("SignalR", "$method erro: ${error.message}") }
+            )
     }
 
     suspend fun getHistory(chatId: String): List<ChatMessage> {
