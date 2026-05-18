@@ -130,7 +130,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Ola! Que bom ter voce por aqui.\nVamos juntos criar estrategias que transformam!",
+                text = "Ola! Que bom ter você por aqui.\nVamos juntos criar estrategias que transformam!",
                 color = Color(0xFFDDE5EC),
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center

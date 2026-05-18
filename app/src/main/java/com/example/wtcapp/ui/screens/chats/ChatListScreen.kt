@@ -128,7 +128,7 @@ fun ChatRow(
     val initial = chatName.firstOrNull()?.uppercaseChar()?.toString() ?: "C"
     val lastMessageText = when {
         chat.lastMessage == null -> "Nenhuma mensagem ainda"
-        chat.lastMessage.senderId == currentUserId -> "Voce: ${chat.lastMessage.text}"
+        chat.lastMessage.senderId == currentUserId -> "Você: ${chat.lastMessage.text}"
         else -> chat.lastMessage.text
     }
 
