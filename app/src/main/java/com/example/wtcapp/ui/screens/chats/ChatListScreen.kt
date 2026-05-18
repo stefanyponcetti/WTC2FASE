@@ -36,6 +36,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -194,10 +195,18 @@ fun ChatListScreen(
     onNavigateToContatos: () -> Unit,
     onNavigateToNovaMensagem: (String, String) -> Unit
 ) {
-    val viewModel = remember { ChatListViewModel(jwtToken, currentUserId) }
+    val viewModel = remember(jwtToken, currentUserId) {
+        ChatListViewModel(jwtToken, currentUserId)
+    }
     val uiState by viewModel.uiState.collectAsState(initial = ChatListUiState())
     var showCreateOptions by remember { mutableStateOf(false) }
     var showGroupDialog by remember { mutableStateOf(false) }
+
+    DisposableEffect(viewModel) {
+        onDispose {
+            viewModel.disconnectRealtime()
+        }
+    }
 
     LaunchedEffect(uiState.navigateToChatId, uiState.navigateToChatName) {
         val chatId = uiState.navigateToChatId

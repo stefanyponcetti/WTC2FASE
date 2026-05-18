@@ -2,10 +2,13 @@ package com.example.wtcapp.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.wtcapp.data.models.ChatMessage
 import com.example.wtcapp.data.models.ChatModel
 import com.example.wtcapp.data.models.CreateGroupRequest
+import com.example.wtcapp.data.models.LastMessageData
 import com.example.wtcapp.data.models.UserModel
 import com.example.wtcapp.data.remote.RetrofitClient
+import com.example.wtcapp.data.repositories.ChatListRealtimeRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -35,9 +38,12 @@ class ChatListViewModel(
     private val _uiState = MutableStateFlow(ChatListUiState())
     val uiState = _uiState.asStateFlow()
     private var chatMembers: Map<String, List<String>> = emptyMap()
+    private val realtimeRepository = ChatListRealtimeRepository(jwtToken)
 
     init {
         loadChats()
+        collectRealtimeMessages()
+        realtimeRepository.connect()
     }
 
     private fun loadChats() {
@@ -163,6 +169,10 @@ class ChatListViewModel(
         loadChats()
     }
 
+    fun disconnectRealtime() {
+        realtimeRepository.disconnect()
+    }
+
     fun onNavigated() {
         _uiState.update {
             it.copy(
@@ -171,4 +181,105 @@ class ChatListViewModel(
             )
         }
     }
+
+    override fun onCleared() {
+        realtimeRepository.disconnect()
+        super.onCleared()
+    }
+
+    private fun collectRealtimeMessages() {
+        viewModelScope.launch {
+            realtimeRepository.incomingMessages.collect { message ->
+                android.util.Log.d(
+                    "ChatListVM",
+                    "ChatList ReceiveMessage recebido: id=${message.id}, chatId=${message.chatId}, senderId=${message.senderId}"
+                )
+
+                if (message.senderId != currentUserId) {
+                    android.util.Log.d(
+                        "ChatListVM",
+                        "ChatList ConfirmDelivery chamado: messageId=${message.id}"
+                    )
+                    realtimeRepository.confirmDelivery(message.id)
+                }
+
+                android.util.Log.d(
+                    "ChatListVM",
+                    "ChatList MarkAsRead NAO chamado: messageId=${message.id}"
+                )
+
+                val updated = updateLastMessage(message)
+                if (!updated) {
+                    android.util.Log.d(
+                        "ChatListVM",
+                        "Chat nao encontrado na lista, recarregando: chatId=${message.chatId}"
+                    )
+                    loadChats()
+                }
+            }
+        }
+    }
+
+    private fun updateLastMessage(message: ChatMessage): Boolean {
+        var found = false
+
+        _uiState.update { state ->
+            val grupos = updateChatListLastMessage(state.grupos, message)
+            val privadosInternos = updateChatListLastMessage(state.privadosInternos, message)
+            val privadosExternos = updateChatListLastMessage(state.privadosExternos, message)
+
+            found = grupos.found || privadosInternos.found || privadosExternos.found
+
+            state.copy(
+                grupos = grupos.chats,
+                privadosInternos = privadosInternos.chats,
+                privadosExternos = privadosExternos.chats
+            )
+        }
+
+        if (found) {
+            android.util.Log.d(
+                "ChatListVM",
+                "ChatList lastMessage atualizado: chatId=${message.chatId}"
+            )
+        }
+
+        return found
+    }
+
+    private fun updateChatListLastMessage(
+        chats: List<ChatModel>,
+        message: ChatMessage
+    ): ChatListUpdateResult {
+        var found = false
+        val updated = chats.map { chat ->
+            if (chat.id == message.chatId) {
+                found = true
+                chat.copy(
+                    lastMessage = LastMessageData(
+                        text = message.text,
+                        senderId = message.senderId,
+                        sentDate = message.sentAt
+                    )
+                )
+            } else {
+                chat
+            }
+        }
+
+        return ChatListUpdateResult(
+            chats = if (found) {
+                updated.filter { chat -> chat.id == message.chatId } +
+                    updated.filterNot { chat -> chat.id == message.chatId }
+            } else {
+                updated
+            },
+            found = found
+        )
+    }
 }
+
+private data class ChatListUpdateResult(
+    val chats: List<ChatModel>,
+    val found: Boolean
+)

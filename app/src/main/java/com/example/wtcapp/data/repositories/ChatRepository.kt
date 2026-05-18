@@ -120,7 +120,6 @@ class ChatRepository(private val jwtToken: String) {
                 connectionReady = true
                 android.util.Log.d("SignalR", "Conexao iniciada. state=${connectionStateLabel()}")
                 joinChat(chatId)
-                markAsRead(chatId)
             }
             .doOnError { error ->
                 connectionReady = false
@@ -196,16 +195,17 @@ class ChatRepository(private val jwtToken: String) {
         invokeHub("ConfirmDelivery", messageId)
     }
 
-    fun markAsRead(chatId: String) {
+    fun markAsRead(chatId: String): Boolean {
         android.util.Log.d(
             "SignalR",
             "MarkAsRead chamado: chatId=$chatId ready=$connectionReady state=${connectionStateLabel()}"
         )
         if (!canInvokeHub(chatId)) {
             android.util.Log.e("SignalR", "MarkAsRead bloqueado: conexao SignalR nao esta pronta para chatId=$chatId")
-            return
+            return false
         }
         invokeHub("MarkAsRead", chatId)
+        return true
     }
 
     private fun joinChat(chatId: String) {

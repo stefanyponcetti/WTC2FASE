@@ -150,14 +150,15 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    LaunchedEffect(jwtToken, tipoCliente) {
+                    LaunchedEffect(jwtToken, tipoCliente, currentUserId) {
                         val token = jwtToken
-                        if (!token.isNullOrBlank() && tipoCliente.isNotBlank()) {
-                            startNotificacaoService(context, token, tipoCliente)
+                        val userId = currentUserId
+                        if (!token.isNullOrBlank() && tipoCliente.isNotBlank() && !userId.isNullOrBlank()) {
+                            startNotificacaoService(context, token, tipoCliente, userId)
                         } else {
                             Log.d(
                                 "MainActivity",
-                                "NotificacaoService nao iniciado: token blank=${token.isNullOrBlank()} tipoCliente=$tipoCliente"
+                                "NotificacaoService nao iniciado: token blank=${token.isNullOrBlank()} tipoCliente=$tipoCliente currentUserId blank=${userId.isNullOrBlank()}"
                             )
                         }
                     }
@@ -329,10 +330,16 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private fun startNotificacaoService(context: Context, token: String, tipoCliente: String) {
+private fun startNotificacaoService(
+    context: Context,
+    token: String,
+    tipoCliente: String,
+    currentUserId: String
+) {
     Log.d("MainActivity", "Tentando iniciar NotificacaoService")
     Log.d("MainActivity", "token blank=${token.isBlank()}")
     Log.d("MainActivity", "tipoCliente=$tipoCliente")
+    Log.d("MainActivity", "currentUserId blank=${currentUserId.isBlank()}")
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         val granted = ContextCompat.checkSelfPermission(
@@ -348,6 +355,7 @@ private fun startNotificacaoService(context: Context, token: String, tipoCliente
     val intent = Intent(context, NotificacaoService::class.java).apply {
         putExtra("token", token)
         putExtra("tipoCliente", tipoCliente)
+        putExtra("currentUserId", currentUserId)
     }
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

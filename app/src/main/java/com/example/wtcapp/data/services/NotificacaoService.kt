@@ -21,6 +21,7 @@ class NotificacaoService : Service() {
 
     private var hubConnection: HubConnection? = null
     private var tipoCliente: String = ""
+    private var currentUserId: String = ""
 
     private val serviceChannelId = "notificacao_service_channel"
     private val comunicadosChannelId = "comunicados_channel_high"
@@ -39,10 +40,14 @@ class NotificacaoService : Service() {
         tipoCliente = intent?.getStringExtra("tipoCliente")
             ?.takeIf { it.isNotBlank() }
             ?: tipoCliente
+        currentUserId = intent?.getStringExtra("currentUserId")
+            ?.takeIf { it.isNotBlank() }
+            ?: currentUserId
 
         Log.d(TAG, "onStartCommand")
         Log.d(TAG, "token blank=${token.isBlank()}")
         Log.d(TAG, "tipoCliente recebido=$tipoCliente")
+        Log.d(TAG, "currentUserId blank=${currentUserId.isBlank()}")
 
         if (token.isBlank()) {
             Log.e(TAG, "Servico nao iniciado: token vazio")
@@ -118,6 +123,33 @@ class NotificacaoService : Service() {
                     showNotification(notificacao)
                 }
             },
+            String::class.java,
+            String::class.java,
+            String::class.java,
+            String::class.java,
+            String::class.java
+        )
+
+        connection.on(
+            "ReceiveMessage",
+            { id: String, chatId: String, senderId: String, text: String, sentAt: String, status: String ->
+                Log.d(
+                    TAG,
+                    "ReceiveMessage recebido args no service: id=$id chatId=$chatId senderId=$senderId status=$status state=${connectionStateLabel()}"
+                )
+
+                if (currentUserId.isBlank()) {
+                    Log.d(TAG, "ConfirmDelivery ignorado porque currentUserId esta vazio: messageId=$id")
+                } else if (senderId == currentUserId) {
+                    Log.d(TAG, "ConfirmDelivery ignorado porque mensagem e do usuario atual: messageId=$id")
+                } else {
+                    Log.d(TAG, "ConfirmDelivery chamado porque mensagem chegou: messageId=$id")
+                    invokeHub("ConfirmDelivery", id)
+                }
+
+                Log.d(TAG, "MarkAsRead ignorado porque ChatScreen nao esta ativa: messageId=$id")
+            },
+            String::class.java,
             String::class.java,
             String::class.java,
             String::class.java,
@@ -227,6 +259,21 @@ class NotificacaoService : Service() {
 
     private fun normalizeToken(token: String): String {
         return token.removePrefix("Bearer ").trim()
+    }
+
+    private fun invokeHub(method: String, vararg args: Any) {
+        val connection = hubConnection
+        if (connection == null) {
+            Log.e(TAG, "$method nao enviado: hubConnection nula")
+            return
+        }
+
+        Log.d(TAG, "$method invocando. state=${connectionStateLabel()}")
+        connection.invoke(method, *args)
+            .subscribe(
+                { Log.d(TAG, "$method concluido. state=${connectionStateLabel()}") },
+                { error -> Log.e(TAG, "$method erro: ${error.message}", error) }
+            )
     }
 
     private fun connectionStateLabel(): String {

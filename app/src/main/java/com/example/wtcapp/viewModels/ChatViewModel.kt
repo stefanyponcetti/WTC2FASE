@@ -7,6 +7,8 @@ import com.example.wtcapp.data.repositories.ChatRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.Instant
 
@@ -23,6 +25,8 @@ class ChatViewModel(
 ) : ViewModel() {
     private val repository = ChatRepository(jwtToken)
     private val pendingStatusUpdates = mutableMapOf<String, String>()
+    private var isChatScreenActive = false
+    private var markAsReadRetryJob: Job? = null
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState = _uiState.asStateFlow()
@@ -82,8 +86,31 @@ class ChatViewModel(
                 }
 
                 if (shouldAcknowledge) {
+                    android.util.Log.d(
+                        "ChatVM",
+                        "ConfirmDelivery chamado porque mensagem chegou: messageId=${normalizedMessage.id}"
+                    )
                     repository.confirmDelivery(normalizedMessage.id)
-                    repository.markAsRead(chatId)
+
+                    when {
+                        !isChatScreenActive -> {
+                            android.util.Log.d(
+                                "ChatVM",
+                                "MarkAsRead ignorado porque ChatScreen nao esta ativa: messageId=${normalizedMessage.id}"
+                            )
+                        }
+
+                        normalizedMessage.chatId != chatId -> {
+                            android.util.Log.d(
+                                "ChatVM",
+                                "MarkAsRead ignorado porque mensagem e de outro chat: messageChatId=${normalizedMessage.chatId}, currentChatId=$chatId"
+                            )
+                        }
+
+                        else -> {
+                            requestMarkAsRead("mensagem recebida no chat ativo")
+                        }
+                    }
                 }
             }
         }
@@ -137,6 +164,64 @@ class ChatViewModel(
         repository.connect(chatId)
     }
 
+    fun onScreenActive() {
+        isChatScreenActive = true
+        android.util.Log.d("ChatVM", "ChatScreen ativa: chatId=$chatId")
+        requestMarkAsRead("ChatScreen aberta")
+    }
+
+    fun onScreenInactive() {
+        isChatScreenActive = false
+        markAsReadRetryJob?.cancel()
+        markAsReadRetryJob = null
+        android.util.Log.d("ChatVM", "ChatScreen inativa: chatId=$chatId")
+    }
+
+    private fun requestMarkAsRead(reason: String) {
+        if (!isChatScreenActive) {
+            android.util.Log.d("ChatVM", "MarkAsRead ignorado porque ChatScreen nao esta ativa")
+            return
+        }
+
+        android.util.Log.d(
+            "ChatVM",
+            "MarkAsRead chamado porque ChatScreen esta ativa: chatId=$chatId reason=$reason"
+        )
+
+        val sent = repository.markAsRead(chatId)
+        if (sent) {
+            markAsReadRetryJob?.cancel()
+            markAsReadRetryJob = null
+            return
+        }
+
+        scheduleMarkAsReadRetry()
+    }
+
+    private fun scheduleMarkAsReadRetry() {
+        if (markAsReadRetryJob?.isActive == true) return
+
+        markAsReadRetryJob = viewModelScope.launch {
+            repeat(MARK_AS_READ_RETRY_COUNT) {
+                delay(MARK_AS_READ_RETRY_DELAY_MS)
+                if (!isChatScreenActive) {
+                    android.util.Log.d("ChatVM", "MarkAsRead ignorado porque ChatScreen nao esta ativa")
+                    return@launch
+                }
+
+                android.util.Log.d(
+                    "ChatVM",
+                    "Tentando MarkAsRead novamente porque ChatScreen esta ativa: chatId=$chatId"
+                )
+
+                if (repository.markAsRead(chatId)) {
+                    markAsReadRetryJob = null
+                    return@launch
+                }
+            }
+        }
+    }
+
     fun sendMessage(text: String) {
         val trimmedText = text.trim()
         if (trimmedText.isBlank()) return
@@ -179,5 +264,7 @@ class ChatViewModel(
 
     companion object {
         private const val OPTIMISTIC_MESSAGE_PREFIX = "local-"
+        private const val MARK_AS_READ_RETRY_COUNT = 10
+        private const val MARK_AS_READ_RETRY_DELAY_MS = 500L
     }
 }

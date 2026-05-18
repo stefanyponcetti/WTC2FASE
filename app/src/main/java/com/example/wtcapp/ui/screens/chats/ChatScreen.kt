@@ -32,6 +32,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -75,6 +76,14 @@ fun ChatScreen(
     val uiState by viewModel.uiState.collectAsState()
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
+
+    DisposableEffect(chatId) {
+        viewModel.onScreenActive()
+
+        onDispose {
+            viewModel.onScreenInactive()
+        }
+    }
 
     LaunchedEffect(uiState.messages.size) {
         if (uiState.messages.isNotEmpty()) {
@@ -161,7 +170,6 @@ fun ChatScreen(
                 contentPadding = PaddingValues(vertical = 12.dp)
             ) {
                 items(uiState.messages, key = { it.id }) { message ->
-                    // Balão de mensagem
                     val isMe = viewModel.isMe(message.senderId)
                     val timeLabel = formatChatTime(message.sentAt)
 
