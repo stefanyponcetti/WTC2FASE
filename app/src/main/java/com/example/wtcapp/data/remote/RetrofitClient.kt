@@ -7,7 +7,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    private const val BASE_URL = "https://wtc2fase-net.onrender.com/"
+    private const val BASE_URL = "http://10.0.2.2:5255/"
     private var _api: UserApi? = null
     private var _chatApi: ChatApiService? = null
     private var _passwordApi: RedefinirSenhaApi? = null

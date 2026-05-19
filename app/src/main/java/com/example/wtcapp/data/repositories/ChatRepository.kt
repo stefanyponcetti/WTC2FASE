@@ -26,7 +26,7 @@ class ChatRepository(private val jwtToken: String) {
     private var connectedChatId: String? = null
     private var connectionReady = false
 
-    private val hubUrl = "https://wtc2fase-net.onrender.com/hubs/chat"
+    private val hubUrl = "http://10.0.2.2:5255/hubs/chat"
 
     fun connect(chatId: String) {
         if (hubConnection != null && connectedChatId == chatId) {
@@ -61,11 +61,12 @@ class ChatRepository(private val jwtToken: String) {
 
         connection.on(
             "ReceiveMessage",
-            { id: String, messageChatId: String, senderId: String, text: String, sentAt: String, status: String ->
+            { id: String, messageChatId: String, senderId: String, senderName: String, text: String, sentAt: String, status: String ->
                 val message = ChatMessage(
                     id = id,
                     chatId = messageChatId,
                     senderId = senderId,
+                    senderName = senderName,
                     text = text,
                     sentAt = sentAt,
                     status = status
@@ -79,12 +80,13 @@ class ChatRepository(private val jwtToken: String) {
                 } else {
                     android.util.Log.d(
                         "SignalR",
-                        "ReceiveMessage recebido args: id=$id chatId=$messageChatId senderId=$senderId status=$status state=${connectionStateLabel()}"
+                        "ReceiveMessage recebido args: id=$id chatId=$messageChatId senderId=$senderId senderName=$senderName status=$status state=${connectionStateLabel()}"
                     )
                     val emitted = _incomingMessages.tryEmit(message)
                     android.util.Log.d("SignalR", "ReceiveMessage tryEmit=$emitted")
                 }
             },
+            String::class.java,
             String::class.java,
             String::class.java,
             String::class.java,

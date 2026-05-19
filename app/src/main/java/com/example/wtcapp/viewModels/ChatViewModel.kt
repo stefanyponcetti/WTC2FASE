@@ -230,6 +230,7 @@ class ChatViewModel(
             id = "$OPTIMISTIC_MESSAGE_PREFIX${System.currentTimeMillis()}",
             chatId = chatId,
             senderId = currentUserId,
+            senderName = null,
             text = trimmedText,
             sentAt = Instant.now().toString(),
             status = "Enviado"

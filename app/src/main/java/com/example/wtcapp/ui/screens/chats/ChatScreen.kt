@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.wtcapp.viewmodels.ChatViewModel
@@ -67,6 +68,7 @@ fun ChatScreen(
     chatName: String,
     currentUserId: String,
     jwtToken: String,
+    isGroup: Boolean,
     onBack: () -> Unit
 ) {
     val viewModel = remember(chatId, currentUserId, jwtToken) {
@@ -191,6 +193,15 @@ fun ChatScreen(
                                 .padding(horizontal = 12.dp, vertical = 8.dp)
                         ) {
                             Column {
+                                if (isGroup && !isMe && !message.senderName.isNullOrBlank()) {
+                                    Text(
+                                        text = message.senderName,
+                                        color = laranja,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                }
                                 Text(text = message.text, color = Color.White, style = MaterialTheme.typography.bodyMedium)
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Row(

@@ -73,6 +73,7 @@ class MainActivity : ComponentActivity() {
 
                     var selectedChatId by remember { mutableStateOf("") }
                     var selectedChatName by remember { mutableStateOf("") }
+                    var selectedChatIsGroup by remember { mutableStateOf(false) }
                     var jwtToken by remember { mutableStateOf<String?>(null) }
                     var currentUserId by remember { mutableStateOf<String?>(null) }
                     var tipoCliente by remember { mutableStateOf("") }
@@ -205,9 +206,10 @@ class MainActivity : ComponentActivity() {
                                     onNavigateToPerfil = { screenStack.add("perfil") },
                                     onNavigateToComunicados = { screenStack.add("comunicados") },
                                     onNavigateToContatos = { screenStack.add("contatos") },
-                                    onNavigateToNovaMensagem = { chatId, chatName ->
+                                    onNavigateToNovaMensagem = { chatId, chatName, isGroup ->
                                         selectedChatId = chatId
                                         selectedChatName = chatName
+                                        selectedChatIsGroup = isGroup
                                         screenStack.add("chat")
                                     }
                                 )
@@ -225,6 +227,7 @@ class MainActivity : ComponentActivity() {
                                     chatName = selectedChatName,
                                     currentUserId = userId,
                                     jwtToken = token,
+                                    isGroup = selectedChatIsGroup,
                                     onBack = { screenStack.removeLast() }
                                 )
                             }
@@ -278,9 +281,10 @@ class MainActivity : ComponentActivity() {
                                     onNavigateToPerfil = { screenStack.add("perfil") },
                                     onNavigateToComunicados = { screenStack.add("comunicados") },
                                     onNavigateToContatos = { screenStack.add("contatos") },
-                                    onNavigateToChat = { chatId, chatName ->
+                                    onNavigateToChat = { chatId, chatName, isGroup ->
                                         selectedChatId = chatId
                                         selectedChatName = chatName
+                                        selectedChatIsGroup = isGroup
                                         screenStack.add("chat")
                                     }
                                 )

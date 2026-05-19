@@ -25,7 +25,7 @@ class NotificacaoService : Service() {
 
     private val serviceChannelId = "notificacao_service_channel"
     private val comunicadosChannelId = "comunicados_channel_high"
-    private val hubUrl = "https://wtc2fase-net.onrender.com/hubs/chat"
+    private val hubUrl = "http://10.0.2.2:5255/hubs/chat"
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -132,10 +132,10 @@ class NotificacaoService : Service() {
 
         connection.on(
             "ReceiveMessage",
-            { id: String, chatId: String, senderId: String, text: String, sentAt: String, status: String ->
+            { id: String, chatId: String, senderId: String, senderName: String, text: String, sentAt: String, status: String ->
                 Log.d(
                     TAG,
-                    "ReceiveMessage recebido args no service: id=$id chatId=$chatId senderId=$senderId status=$status state=${connectionStateLabel()}"
+                    "ReceiveMessage recebido args no service: id=$id chatId=$chatId senderId=$senderId senderName=$senderName status=$status state=${connectionStateLabel()}"
                 )
 
                 if (currentUserId.isBlank()) {
@@ -149,6 +149,7 @@ class NotificacaoService : Service() {
 
                 Log.d(TAG, "MarkAsRead ignorado porque ChatScreen nao esta ativa: messageId=$id")
             },
+            String::class.java,
             String::class.java,
             String::class.java,
             String::class.java,

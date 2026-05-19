@@ -18,7 +18,7 @@ class ChatListRealtimeRepository(private val jwtToken: String) {
     private var hubConnection: HubConnection? = null
     private var connectionReady = false
 
-    private val hubUrl = "https://wtc2fase-net.onrender.com/hubs/chat"
+    private val hubUrl = "http://10.0.2.2:5255/hubs/chat"
 
     fun connect() {
         if (hubConnection != null && connectionStateLabel() != "DISCONNECTED") {
@@ -45,11 +45,12 @@ class ChatListRealtimeRepository(private val jwtToken: String) {
 
         connection.on(
             "ReceiveMessage",
-            { id: String, chatId: String, senderId: String, text: String, sentAt: String, status: String ->
+            { id: String, chatId: String, senderId: String, senderName: String, text: String, sentAt: String, status: String ->
                 val message = ChatMessage(
                     id = id,
                     chatId = chatId,
                     senderId = senderId,
+                    senderName = senderName,
                     text = text,
                     sentAt = sentAt,
                     status = status
@@ -57,13 +58,14 @@ class ChatListRealtimeRepository(private val jwtToken: String) {
 
                 Log.d(
                     TAG,
-                    "ChatList ReceiveMessage recebido: id=$id chatId=$chatId senderId=$senderId status=$status state=${connectionStateLabel()}"
+                    "ChatList ReceiveMessage recebido: id=$id chatId=$chatId senderId=$senderId senderName=$senderName status=$status state=${connectionStateLabel()}"
                 )
 
                 val emitted = _incomingMessages.tryEmit(message)
                 Log.d(TAG, "ChatList ReceiveMessage tryEmit=$emitted")
                 Log.d(TAG, "ChatList MarkAsRead NAO chamado")
             },
+            String::class.java,
             String::class.java,
             String::class.java,
             String::class.java,

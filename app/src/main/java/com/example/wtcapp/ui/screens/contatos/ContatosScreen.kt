@@ -121,7 +121,7 @@ fun ContatosScreen(
     onNavigateToPerfil: () -> Unit,
     onNavigateToComunicados: () -> Unit,
     onNavigateToContatos: () -> Unit,
-    onNavigateToChat: (chatId: String, chatName: String) -> Unit
+    onNavigateToChat: (chatId: String, chatName: String, isGroup: Boolean) -> Unit
 ) {
     val viewModel = remember { ContatosViewModel(jwtToken, currentUserId) }
     val uiState by viewModel.uiState.collectAsState(initial = ContatosUiState())
@@ -134,7 +134,7 @@ fun ContatosScreen(
         val chatName = uiState.navigateToChatName
 
         if (!chatId.isNullOrBlank() && !chatName.isNullOrBlank()) {
-            onNavigateToChat(chatId, chatName)
+            onNavigateToChat(chatId, chatName, false)
             viewModel.onNavigated()
         }
     }

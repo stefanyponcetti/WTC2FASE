@@ -67,7 +67,7 @@ fun ChatSection(
     chats: List<ChatModel>,
     viewModel: ChatListViewModel,
     currentUserId: String,
-    onNavigateToNovaMensagem: (String, String) -> Unit
+    onNavigateToNovaMensagem: (String, String, Boolean) -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(true) }
 
@@ -123,7 +123,7 @@ fun ChatRow(
     chat: ChatModel,
     chatName: String,
     currentUserId: String,
-    onNavigateToNovaMensagem: (String, String) -> Unit
+    onNavigateToNovaMensagem: (String, String, Boolean) -> Unit
 ) {
     val initial = chatName.firstOrNull()?.uppercaseChar()?.toString() ?: "C"
     val lastMessageText = when {
@@ -136,7 +136,7 @@ fun ChatRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
-                onNavigateToNovaMensagem(chat.id, chatName)
+                onNavigateToNovaMensagem(chat.id, chatName, chat.isGroup)
             }
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -193,7 +193,7 @@ fun ChatListScreen(
     onNavigateToPerfil: () -> Unit,
     onNavigateToComunicados: () -> Unit,
     onNavigateToContatos: () -> Unit,
-    onNavigateToNovaMensagem: (String, String) -> Unit
+    onNavigateToNovaMensagem: (String, String, Boolean) -> Unit
 ) {
     val viewModel = remember(jwtToken, currentUserId) {
         ChatListViewModel(jwtToken, currentUserId)
@@ -212,7 +212,7 @@ fun ChatListScreen(
         val chatId = uiState.navigateToChatId
         val chatName = uiState.navigateToChatName
         if (!chatId.isNullOrBlank() && !chatName.isNullOrBlank()) {
-            onNavigateToNovaMensagem(chatId, chatName)
+            onNavigateToNovaMensagem(chatId, chatName, true)
             viewModel.onNavigated()
         }
     }
@@ -303,7 +303,7 @@ private fun ChatListContent(
     viewModel: ChatListViewModel,
     currentUserId: String,
     onRetry: () -> Unit,
-    onNavigateToNovaMensagem: (String, String) -> Unit,
+    onNavigateToNovaMensagem: (String, String, Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     when {
